@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ntt_projects {
+  id          Int    @id(map: "ntt_projects_pkey1") @unique @default(autoincrement())
+  group_id    Int
+  org_id      Int?
+  name        String @db.VarChar(80)
+  description Int?
+  status      Int    @default(1) @db.SmallInt
+}
+
+model ntt_tasks {
+  id          Int     @id(map: "ntt_projects_pkey") @unique @default(autoincrement())
+  group_id    Int
+  org_id      Int?
+  name        String  @db.VarChar(80)
+  description String? @db.VarChar(255)
+  status      Int     @default(1) @db.SmallInt
+  project_id  Int?
+}
+
+model ntt_users {
+  id            Int     @id(map: "users_pkey") @default(autoincrement())
+  email         String  @unique(map: "users_email_key") @db.VarChar(120)
+  username      String  @unique(map: "users_username_key") @db.VarChar(120)
+  password      String? @db.VarChar(120)
+  status        Int     @default(1) @db.SmallInt
+  group_id      Int
+  org_id        Int?
+  role_id       Int?
+  client_id     Int?
+  rate          Int     @default(0)
+  quota_percent BigInt? @default(100000000)
+}
+
+model ntt_log {
+  id           Int       @id(map: "ntt_log_pk") @default(autoincrement())
+  user_id      Int
+  group_id     Int
+  org_id       Int?
+  date         DateTime  @db.Timestamp(6)
+  start        DateTime  @db.Timestamp(6)
+  end          DateTime? @db.Timestamp(6)
+  duration     DateTime? @db.Time(6)
+  client_id    Int?
+  project_id   Int
+  task_id      Int
+  timesheet_id Int?
+  invoice_id   Int?
+  comment      String?
+  billable     Boolean?  @default(false)
+  approved     Boolean?  @default(false)
+  paid         Boolean   @default(false)
+  status       Int?      @default(1) @db.SmallInt
+}
