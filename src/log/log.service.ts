@@ -17,16 +17,14 @@ export class LogService {
         project_id,
       },
     });
-    console.log(currentLog);
-
-    const duration = this.calculateDuration(currentLog.start);
-    return duration;
+    if (currentLog) {
+      return currentLog;
+    }
   }
 
-  calculateDuration(start: Date) {
-    const now = DateTime.now();
+  calculateDuration(start: Date, now: DateTime) {
     const startDateTime = DateTime.fromJSDate(start);
-    const duration = now.diff(startDateTime, 'seconds');
+    const duration = now.diff(startDateTime, ['hours', 'minutes', 'seconds']);
     return duration;
   }
 
@@ -58,7 +56,9 @@ export class LogService {
     return res[0].count;
   }
 
-  async close(log_id: number) {
+  async close(log_id: number, user_id: number) {
+    this.prisma.ntt_log.findFirst();
+    await this.getRunningLog(user_id, 1, 1);
     return this.prisma.ntt_log.update({
       where: { id: log_id },
       data: { end: new Date(), status: 0 },

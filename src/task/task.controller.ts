@@ -63,7 +63,7 @@ export class TaskController {
     const todayDate = new Date();
     try {
       await this.taskService.closeTask(body.task_id);
-      return await this.logService.close(body.log_id);
+      return await this.logService.close(body.log_id, jwtClaims.sub);
     } catch (e) {
       throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
     }

@@ -11,6 +11,7 @@ import {
 import { LogService } from './log.service';
 import { Prisma } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
+import { DateTime } from 'luxon';
 
 @Controller('log')
 export class LogController {
@@ -32,7 +33,28 @@ export class LogController {
     const user_id = jwtClaims.sub;
     const group_id = Number(headers.group_id);
     const project_id = Number(headers.project_id);
-    return await this.logService.getRunningLog(user_id, group_id, project_id);
+    const currentLog = await this.logService.getRunningLog(
+      user_id,
+      group_id,
+      project_id,
+    );
+
+    if (!currentLog) {
+      throw new HttpException('No running log found', HttpStatus.NOT_FOUND);
+    }
+    const now = DateTime.now();
+
+    this.logService.calculateDuration(currentLog.start, now);
+    const duration = this.logService.calculateDuration(currentLog.start, now);
+    // const durationTime =
+    //   duration.hours + ':' + duration.minutes + ':' + duration.seconds;
+    const logDetails = {
+      log: currentLog,
+      serverTime: now.toJSDate(),
+      currentDuration:
+        duration.hours + ':' + duration.minutes + ':' + duration.seconds,
+    };
+    return logDetails;
   }
 
   @Post()
@@ -55,8 +77,9 @@ export class LogController {
   }
 
   @Put('close')
-  async close(@Body() body: { log_id: number }) {
-    // TODO: implement to check if the task exists
+  async close(@Body() body: { log_id: number }, @Headers() headers: any) {
+    // TODO: implement to check if the task exists and if the user is the owner of the task
+    const jwtClaims = this.authService.verifyToken(headers.authorization);
     const res = await this.logService.getStatus(body.log_id);
     if (res === null) {
       throw new HttpException('Log not found', HttpStatus.NOT_FOUND);
@@ -64,7 +87,7 @@ export class LogController {
     if (res.hasOwnProperty('status') && res.status === 0) {
       throw new HttpException('Log is already closed', HttpStatus.BAD_REQUEST);
     } else {
-      return await this.logService.close(body.log_id);
+      return await this.logService.close(body.log_id, jwtClaims.sub);
     }
   }
 }
