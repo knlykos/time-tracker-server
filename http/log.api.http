@@ -1,0 +1,36 @@
+### Get a running log, only one task should be running
+GET /log HTTP/1.1
+Host: {{host}}
+group_id: 1
+project_id: 1
+Authorization: {{accessToken}}
+Cookie: mailpoet_page_view=%7B%22timestamp%22%3A1669610368%7D
+
+### Create a new log, for some existing task
+### TODO: Verify if the task not exists and fix it
+POST /log HTTP/1.1
+Host: {{host}}
+Authorization: {{accessToken}}
+Content-Type: application/json
+Cookie: mailpoet_page_view=%7B%22timestamp%22%3A1669610368%7D
+
+{
+  "task_id": 24,
+  "group_id": 1,
+  "project_id": 1
+}
+
+### close a log, for some existing task verify if the task not exists and fix it
+PUT /log/close HTTP/1.1
+Host: {{host}}
+Authorization: {{accessToken}}
+Content-Type: application/json
+Cookie: mailpoet_page_view=%7B%22timestamp%22%3A1669610368%7D
+
+{
+  "log_id":21,
+  "org_id": 1,
+  "group_id": 1,
+  "client_id": 1,
+  "project_id": 1
+}
