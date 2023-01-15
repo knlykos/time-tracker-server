@@ -7,6 +7,8 @@ import {
   HttpStatus,
   Put,
   Get,
+  Param,
+  Query,
 } from '@nestjs/common';
 import { LogService } from './log.service';
 import { Prisma } from '@prisma/client';
@@ -22,23 +24,21 @@ export class LogController {
 
   @Get()
   async getRunningLog(
+    @Query() params: { group_id: number; project_id: number },
     @Headers()
     headers: {
-      group_id: number;
-      project_id: number;
       authorization: string;
     },
   ) {
     const jwtClaims = this.authService.verifyToken(headers.authorization);
     const user_id = jwtClaims.sub;
-    const group_id = Number(headers.group_id);
-    const project_id = Number(headers.project_id);
+    const group_id = Number(params.group_id);
+    const project_id = Number(params.project_id);
     const currentLog = await this.logService.getRunningLog(
       user_id,
       group_id,
       project_id,
     );
-
     if (!currentLog) {
       throw new HttpException('No running log found', HttpStatus.NOT_FOUND);
     }
@@ -51,8 +51,9 @@ export class LogController {
     const logDetails = {
       log: currentLog,
       serverTime: now.toJSDate(),
-      currentDuration:
+      currentDurationTime:
         duration.hours + ':' + duration.minutes + ':' + duration.seconds,
+      serverTimeEpoch: now.toMillis(),
     };
     return logDetails;
   }

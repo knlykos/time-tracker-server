@@ -17,13 +17,14 @@ model ntt_projects {
 }
 
 model ntt_tasks {
-  id          Int     @id(map: "ntt_projects_pkey") @unique @default(autoincrement())
+  id          Int       @id(map: "ntt_projects_pkey") @unique @default(autoincrement())
   group_id    Int
   org_id      Int?
-  name        String  @db.VarChar(80)
-  description String? @db.VarChar(255)
-  status      Int     @default(1) @db.SmallInt
+  name        String    @db.VarChar(80)
+  description String?   @db.VarChar(255)
+  status      Int       @default(1) @db.SmallInt
   project_id  Int?
+  ntt_log     ntt_log[]
 }
 
 model ntt_users {
@@ -59,4 +60,5 @@ model ntt_log {
   approved     Boolean?  @default(false)
   paid         Boolean   @default(false)
   status       Int?      @default(1) @db.SmallInt
+  ntt_tasks    ntt_tasks @relation(fields: [task_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ntt_log_ntt_tasks_id_fk")
 }
