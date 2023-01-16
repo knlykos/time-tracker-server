@@ -11,7 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { LogService } from './log.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, logs } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { DateTime } from 'luxon';
 
@@ -44,8 +44,10 @@ export class LogController {
     }
     const now = DateTime.now();
 
-    this.logService.calculateDuration(currentLog.start, now);
-    const duration = this.logService.calculateDuration(currentLog.start, now);
+    const duration = this.logService.calculateDuration(
+      currentLog.start_time,
+      now,
+    );
     // const durationTime =
     //   duration.hours + ':' + duration.minutes + ':' + duration.seconds;
     const logDetails = {
@@ -59,10 +61,7 @@ export class LogController {
   }
 
   @Post()
-  async create(
-    @Body() body: Prisma.ntt_logCreateInput,
-    @Headers() headers: any,
-  ) {
+  async create(@Body() body: logs, @Headers() headers: any) {
     const jwtClaims = this.authService.verifyToken(headers.authorization);
     const user_id = jwtClaims.sub;
     const openLogsCount = await this.logService.checkForOpenLog(user_id);
@@ -85,7 +84,7 @@ export class LogController {
     if (res === null) {
       throw new HttpException('Log not found', HttpStatus.NOT_FOUND);
     }
-    if (res.hasOwnProperty('status') && res.status === 0) {
+    if (res.hasOwnProperty('status') && res.status === 'running') {
       throw new HttpException('Log is already closed', HttpStatus.BAD_REQUEST);
     } else {
       return await this.logService.close(body.log_id, jwtClaims.sub);

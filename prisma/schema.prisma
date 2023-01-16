@@ -7,8 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model ntt_projects {
-  id          Int    @id(map: "ntt_projects_pkey1") @unique @default(autoincrement())
+model logs {
+  log_id       Int        @id(map: "log_pk") @default(autoincrement())
+  user_id      Int
+  group_id     Int
+  org_id       Int?
+  date         DateTime   @db.Timestamp(6)
+  start_time   DateTime   @db.Timestamp(6)
+  end_time     DateTime?  @db.Timestamp(6)
+  duration     DateTime?  @db.Time(6)
+  client_id    Int?
+  project_id   Int
+  task_id      Int
+  timesheet_id Int?
+  invoice_id   Int?
+  notes        String?
+  billable     Boolean?   @default(false)
+  status       status_log @default(running)
+  tasks        tasks      @relation(fields: [task_id], references: [task_id], onDelete: NoAction, onUpdate: NoAction, map: "logs_tasks_null_fk")
+}
+
+model projects {
+  id          Int    @id(map: "projects_pkey1") @unique @default(autoincrement())
   group_id    Int
   org_id      Int?
   name        String @db.VarChar(80)
@@ -16,21 +36,26 @@ model ntt_projects {
   status      Int    @default(1) @db.SmallInt
 }
 
-model ntt_tasks {
-  id          Int       @id(map: "ntt_projects_pkey") @unique @default(autoincrement())
-  group_id    Int
-  org_id      Int?
-  name        String    @db.VarChar(80)
-  description String?   @db.VarChar(255)
-  status      Int       @default(1) @db.SmallInt
-  project_id  Int?
-  ntt_log     ntt_log[]
+model tasks {
+  task_id          Int       @id(map: "projects_pkey") @unique(map: "tasks_id_key") @default(autoincrement())
+  group_id         Int
+  org_id           Int?
+  task_name        String    @db.VarChar(80)
+  task_description String?   @db.VarChar(255)
+  project_id       Int?
+  priority         priority  @default(medium)
+  estimated_time   Int?
+  assignee         Int?
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+  due_date         DateTime? @db.Timestamp(6)
+  task_status      status    @default(pending)
+  logs             logs[]
 }
 
-model ntt_users {
-  id            Int     @id(map: "users_pkey") @default(autoincrement())
-  email         String  @unique(map: "users_email_key") @db.VarChar(120)
-  username      String  @unique(map: "users_username_key") @db.VarChar(120)
+model users {
+  id            Int     @id @default(autoincrement())
+  email         String  @unique @db.VarChar(120)
+  username      String  @unique @db.VarChar(120)
   password      String? @db.VarChar(120)
   status        Int     @default(1) @db.SmallInt
   group_id      Int
@@ -41,24 +66,19 @@ model ntt_users {
   quota_percent BigInt? @default(100000000)
 }
 
-model ntt_log {
-  id           Int       @id(map: "ntt_log_pk") @default(autoincrement())
-  user_id      Int
-  group_id     Int
-  org_id       Int?
-  date         DateTime  @db.Timestamp(6)
-  start        DateTime  @db.Timestamp(6)
-  end          DateTime? @db.Timestamp(6)
-  duration     DateTime? @db.Time(6)
-  client_id    Int?
-  project_id   Int
-  task_id      Int
-  timesheet_id Int?
-  invoice_id   Int?
-  comment      String?
-  billable     Boolean?  @default(false)
-  approved     Boolean?  @default(false)
-  paid         Boolean   @default(false)
-  status       Int?      @default(1) @db.SmallInt
-  ntt_tasks    ntt_tasks @relation(fields: [task_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ntt_log_ntt_tasks_id_fk")
+enum priority {
+  high
+  medium
+  low
+}
+
+enum status {
+  pending
+  approved
+  rejected
+}
+
+enum status_log {
+  running
+  ended
 }

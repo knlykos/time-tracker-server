@@ -5,10 +5,9 @@ import {
   HttpException,
   HttpStatus,
   Post,
-  Put,
 } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, tasks } from '@prisma/client';
 import { TaskService } from './task.service';
 import { LogService } from 'src/log/log.service';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -20,14 +19,10 @@ export class TaskController {
     private taskService: TaskService,
     private logService: LogService,
   ) {}
-
   @Post()
   // TODO: add a constraint if is there some open log for the user and task id in the same group id and project id, should throw a error
   // that a task is already open
-  async createTask(
-    @Body() body: Prisma.ntt_tasksCreateInput,
-    @Headers() headers: any,
-  ) {
+  async createTask(@Body() body: tasks, @Headers() headers: any) {
     const jwtClaims = this.authService.verifyToken(headers.authorization);
     const openLogsCount = await this.logService.checkForOpenLog(jwtClaims.sub);
     if (openLogsCount > 0) {
@@ -36,36 +31,31 @@ export class TaskController {
     const todayDate = new Date();
 
     const task = await this.taskService.create(body);
-    const logCreateInput: Prisma.ntt_logCreateInput = {
-      date: todayDate,
-      start: todayDate,
-      project_id: body.project_id,
-      task_id: task.id,
+    const data = {
+      task_id: task.task_id,
       user_id: jwtClaims.sub,
       group_id: task.group_id,
-      status: 1,
+      project_id: task.project_id,
+      start_time: todayDate,
+      date: todayDate,
     };
+    const logCreateInput: Prisma.logsCreateArgs = {
+      data,
+    };
+    // {
+    //   date: todayDate,
+    //   start_time: todayDate,
+    //   project_id: 1,
+    //   task_id: task.task_id,
+    //   user_id: jwtClaims.sub,
+    //   group_id: task.group_id,
+    // };
 
     const log = await this.logService.create(
-      logCreateInput.task_id,
-      logCreateInput.user_id,
-      logCreateInput.group_id,
-      logCreateInput.project_id,
+      data.task_id,
+      data.user_id,
+      data.user_id,
+      data.group_id,
     );
-  }
-
-  @Put('close')
-  async closeTask(
-    @Body() body: { task_id: number; log_id: number },
-    @Headers() headers: any,
-  ) {
-    const jwtClaims = this.authService.verifyToken(headers.authorization);
-    const todayDate = new Date();
-    try {
-      await this.taskService.closeTask(body.task_id);
-      return await this.logService.close(body.log_id, jwtClaims.sub);
-    } catch (e) {
-      throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
-    }
   }
 }
