@@ -33,7 +33,7 @@ model projects {
   org_id      Int?
   name        String @db.VarChar(80)
   description Int?
-  status      Int    @default(1) @db.SmallInt
+  status      Int    @default(1)
 }
 
 model tasks {
@@ -53,17 +53,56 @@ model tasks {
 }
 
 model users {
-  id            Int     @id @default(autoincrement())
-  email         String  @unique @db.VarChar(120)
-  username      String  @unique @db.VarChar(120)
-  password      String? @db.VarChar(120)
-  status        Int     @default(1) @db.SmallInt
-  group_id      Int
-  org_id        Int?
-  role_id       Int?
-  client_id     Int?
-  rate          Int     @default(0)
-  quota_percent BigInt? @default(100000000)
+  id               Int               @id @default(autoincrement())
+  email            String            @unique @db.VarChar(120)
+  username         String            @unique @db.VarChar(120)
+  password         String?           @db.VarChar(120)
+  status           Int?
+  group_id         Int
+  org_id           Int?
+  role_id          Int?
+  client_id        Int?
+  rate             Int               @default(0)
+  quota_percent    BigInt?           @default(100000000)
+  users_role_rel   users_role_rel?   @relation(fields: [role_id], references: [user_role_id], onDelete: NoAction, onUpdate: NoAction)
+  users_status_rel users_status_rel? @relation(fields: [status], references: [user_status_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model logs_priority_rel {
+  log_priority_id          Int       @id(map: "log_priority_pkey") @default(autoincrement())
+  log_priority_name        String    @unique(map: "log_priority_log_priority_name_key") @db.VarChar(255)
+  log_priority_description String?
+  created_at               DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model logs_status_rel {
+  log_status_id          Int       @id(map: "log_status_pkey") @default(autoincrement())
+  log_status_name        String    @unique(map: "log_status_log_status_name_key") @db.VarChar(255)
+  log_status_description String?
+  created_at             DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model projects_status_rel {
+  project_status_id          Int       @id(map: "project_status_pkey") @default(autoincrement())
+  project_status_name        String    @unique(map: "project_status_project_status_name_key") @db.VarChar(255)
+  project_status_description String?
+  created_at                 DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model users_role_rel {
+  user_role_id          Int       @id(map: "users_role_pkey") @default(autoincrement())
+  user_role_name        String    @unique(map: "users_role_user_role_name_key") @db.VarChar(255)
+  user_role_description String?
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+  users                 users[]
+}
+
+model users_status_rel {
+  user_status_id          Int       @id(map: "users_status_pkey") @default(autoincrement())
+  user_status_name        String    @unique(map: "users_status_user_status_name_key") @db.VarChar(255)
+  user_status_description String?
+  created_at              DateTime? @default(now()) @db.Timestamp(6)
+  users                   users[]
 }
 
 enum priority {
