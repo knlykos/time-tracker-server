@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UsersDto } from './dtos/users.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guards';
 
 @Controller('user')
 export class UserController {
@@ -25,7 +24,6 @@ export class UserController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('id/:id')
   async findOneById(@Param('id') id: number) {
     try {

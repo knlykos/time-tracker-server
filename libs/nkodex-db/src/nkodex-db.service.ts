@@ -1,18 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Pool } from 'pg';
+import { Pool, PoolConfig } from 'pg';
 
 @Injectable()
 export class NkodexDbService {
-  pool: Pool;
+  private pool: Pool;
 
-  getConnection() {
-    this.pool = new Pool({
-      host: 'db.nkodex.dev',
-      user: 'postgres',
-      password: 'Kine123..!!',
-      database: 'nkodex_timetracker',
-      max: 20,
-    });
+  getConnection(config: PoolConfig) {
+    this.pool = new Pool(config);
     return this.pool;
   }
 }

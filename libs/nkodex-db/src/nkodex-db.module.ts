@@ -1,5 +1,6 @@
 import { DynamicModule, Global, Module, Provider } from '@nestjs/common';
 import { NkodexDbService } from './nkodex-db.service';
+import { PoolConfig } from 'pg';
 
 @Global()
 @Module({
@@ -7,12 +8,12 @@ import { NkodexDbService } from './nkodex-db.service';
   exports: [NkodexDbService],
 })
 export class NkodexDbModule {
-  static forRoot(): DynamicModule {
+  static forRoot(config: PoolConfig): DynamicModule {
     const providers: Provider[] = [
       {
         provide: 'PG_CONNECTION',
         useFactory: (nkodexDbService: NkodexDbService) => {
-          return nkodexDbService.getConnection();
+          return nkodexDbService.getConnection(config);
         },
         inject: [NkodexDbService],
       },

@@ -14,6 +14,7 @@ import { LogModule } from './log/log.module';
 import { NkodexDbModule } from '@nkodex-db/nkodex-db';
 import { UserModule } from './user/user.module';
 import { jwtConstants } from './auth/constants/constants';
+import { ConfigModule } from '@nestjs/config';
 
 BigInt.prototype['toJSON'] = function () {
   return this.toString();
@@ -21,11 +22,20 @@ BigInt.prototype['toJSON'] = function () {
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      envFilePath: '.development.env',
+    }),
     AuthModule,
     UserModule,
     TaskModule,
     LogModule,
-    NkodexDbModule.forRoot(),
+    NkodexDbModule.forRoot({
+      host: process.env.PG_HOST,
+      user: process.env.PG_USER,
+      password: process.env.PG_PASSWORD,
+      database: process.env.PG_DATABASE,
+      max: +process.env.PG_MAX_CONNECTIONS,
+    }),
   ],
   controllers: [AppController, UserController],
   providers: [AppService, UserService],
