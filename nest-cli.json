@@ -1,5 +1,19 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src"
+  "sourceRoot": "src",
+  "projects": {
+    "nkodex-db": {
+      "type": "library",
+      "root": "libs/nkodex-db",
+      "entryFile": "index",
+      "sourceRoot": "libs/nkodex-db/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/nkodex-db/tsconfig.lib.json"
+      }
+    }
+  },
+  "compilerOptions": {
+    "webpack": true
+  }
 }
