@@ -1,14 +1,29 @@
-import { Body, Controller, Get, Inject, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  Inject,
+  NotAcceptableException,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { Connection } from 'pg';
 import { AuthService } from './auth.service';
+import { LoginAuthDto } from './dto/login-auth.dto/login-auth.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  async login(@Body() body: { email: string; password: string }) {
+  async login(@Body() body: LoginAuthDto) {
     // password = 'Nefo123..';
+    if (body.password !== body.confirm_password) {
+      throw new NotAcceptableException(
+        'Password and confirm password must be the same',
+      );
+    }
     try {
       const accessToken = await this.authService.login(
         body.email,

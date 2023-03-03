@@ -9,14 +9,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { UsersDto } from './dtos/users.dto';
+
+import { CreateUserDto } from './dto/create-user.dto/create-user.dto';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  async create(@Body() user: UsersDto) {
+  async create(@Body() user: CreateUserDto) {
     try {
       return await this.userService.create(user);
     } catch (error) {
@@ -43,7 +44,7 @@ export class UserController {
   }
 
   @Put(':id')
-  async updateById(@Param('id') id: number, @Body() user: UsersDto) {
+  async updateById(@Param('id') id: number, @Body() user: any) {
     try {
       return await this.userService.updatePassword(user);
     } catch (error) {

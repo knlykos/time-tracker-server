@@ -2,13 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 
 import * as bcrypt from 'bcrypt';
 import { PoolClient } from 'pg';
-import { UsersDto } from './dtos/users.dto';
+import { CreateUserDto } from './dto/create-user.dto/create-user.dto';
 
 @Injectable()
 export class UserService {
   constructor(@Inject('PG_CONNECTION') private dbClient: PoolClient) {}
 
-  async create(payload: UsersDto) {
+  async create(payload: CreateUserDto) {
     const saltOrRounds = 10;
     const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
     await this.dbClient.query(
@@ -46,9 +46,9 @@ export class UserService {
     return result.rows;
   }
 
-  async findOneByEmail(email: string): Promise<UsersDto> {
+  async findOneByEmail(email: string): Promise<any> {
     try {
-      const result = await this.dbClient.query<UsersDto>(
+      const result = await this.dbClient.query<any>(
         `SELECT *
          FROM users
          WHERE email = $1`,
@@ -60,7 +60,7 @@ export class UserService {
     }
   }
 
-  async updatePassword(payload: UsersDto) {
+  async updatePassword(payload: any) {
     const saltOrRounds = 10;
     const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
     await this.dbClient.query(
@@ -75,7 +75,7 @@ export class UserService {
     }
   }
 
-  async delete(payload: UsersDto) {
+  async delete(payload: any) {
     await this.dbClient.query(
       `DELETE
        FROM users
