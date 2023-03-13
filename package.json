@@ -24,6 +24,7 @@
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
+    "@nestjs-modules/mailer": "^1.8.1",
     "@nestjs/common": "^9.0.0",
     "@nestjs/config": "^2.3.1",
     "@nestjs/core": "^9.0.0",
@@ -37,8 +38,11 @@
     "bcrypt": "^5.1.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
+    "ejs": "^3.1.9",
+    "handlebars": "^4.7.7",
     "luxon": "^3.2.1",
     "mysql2": "^2.3.3",
+    "nodemailer": "^6.9.1",
     "passport-jwt": "^4.0.1",
     "pg": "^8.8.0",
     "reflect-metadata": "^0.1.13",
@@ -54,6 +58,7 @@
     "@types/jest": "28.1.8",
     "@types/luxon": "^3.2.0",
     "@types/node": "^16.0.0",
+    "@types/nodemailer": "^6.4.7",
     "@types/passport-jwt": "^3.0.8",
     "@types/supertest": "^2.0.11",
     "@typescript-eslint/eslint-plugin": "^5.0.0",

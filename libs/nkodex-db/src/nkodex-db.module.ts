@@ -18,7 +18,6 @@ export class NkodexDbModule {
         inject: [NkodexDbService],
       },
     ];
-    console.log(providers);
     return {
       module: NkodexDbModule,
       providers: providers,

@@ -7,10 +7,14 @@ import {
   NotAcceptableException,
   Param,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { Connection } from 'pg';
 import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login-auth.dto/login-auth.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto/refresh-token.dto';
+import { JwtService } from '@nestjs/jwt';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -28,11 +32,18 @@ export class AuthController {
       const accessToken = await this.authService.login(
         body.email,
         body.password,
+        body.confirm_password,
       );
       return accessToken;
     } catch (e) {
       console.log(e);
     }
+  }
+
+  @UseGuards(AuthGuard('jwt-access'))
+  @Post('refresh-token')
+  async refreshToken(@Body() body: RefreshTokenDto) {
+    await this.authService.refreshToken(body.accessToken);
   }
 
   // register() {

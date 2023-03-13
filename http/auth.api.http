@@ -1,0 +1,9 @@
+POST /auth/login HTTP/1.1
+Host: localhost:3000
+Content-Type: application/json
+
+{
+  "email": "nefi.lopezg@gmail.com",
+  "password": "Nefo123..",
+  "confirm_password": "Nefo123.."
+}

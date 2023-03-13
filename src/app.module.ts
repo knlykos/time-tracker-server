@@ -15,6 +15,8 @@ import { NkodexDbModule } from '@nkodex-db/nkodex-db';
 import { UserModule } from './user/user.module';
 import { jwtConstants } from './auth/constants/constants';
 import { ConfigModule } from '@nestjs/config';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 
 BigInt.prototype['toJSON'] = function () {
   return this.toString();
