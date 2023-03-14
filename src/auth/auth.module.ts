@@ -6,15 +6,17 @@ import { AuthService } from './auth.service';
 import { NkodexDbModule } from '@nkodex-db/nkodex-db';
 import { UserModule } from '../user/user.module';
 import { jwtConstants } from './constants/constants';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtActivationStrategy } from './strategies/jwt-activation-strategy';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
+import { JwtRefreshStrategy } from './strategies/jwt-refresh-strategy';
 
 @Module({
   imports: [
     UserModule,
     JwtModule.register({
-      secret: jwtConstants.secret,
+      secret: jwtConstants.accessSecret,
       signOptions: { expiresIn: '30d', issuer: 'NKODEX' },
     }),
     MailerModule.forRoot({
@@ -39,7 +41,12 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [
+    AuthService,
+    JwtAccessStrategy,
+    JwtRefreshStrategy,
+    JwtActivationStrategy,
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}

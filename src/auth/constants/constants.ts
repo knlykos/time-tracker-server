@@ -1,4 +1,5 @@
 export const jwtConstants = {
-  secret: 'I love my family',
-  secretActivation: 'I love my family activation',
+  accessSecret: 'I love my family',
+  activationSecret: 'I love my family activation',
+  refreshSecret: 'I love my family Refresh',
 };

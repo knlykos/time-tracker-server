@@ -13,17 +13,29 @@ import { PoolClient } from 'pg';
 import { TokensDto } from './dto/tokens.dto/tokens.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto/create-user.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { jwtConstants } from './constants/constants';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
     private readonly userService: UserService,
+    private readonly mailerService: MailerService,
     @Inject('PG_CONNECTION') private dbClient: PoolClient,
   ) {}
 
   async register(payload: CreateUserDto) {
-    await this.userService.create(payload);
+    // const user = await this.userService.create(payload);
+    await this.mailerService.sendMail({
+      to: 'nlopezg87@gmail.com',
+      from: 'noreply@nkodex.dev',
+      subject: 'Activation',
+      template: 'activation-email-template',
+      context: {
+        activateLink: 'http://localhost:3000/activation/121212',
+      },
+    });
   }
 
   async login(email: string, password: string, confirmation: string) {
@@ -67,12 +79,21 @@ export class AuthService {
   }
 
   async refreshToken(accessToken: string): Promise<{ refreshToken: string }> {
-    let tokenPayload = this.jwtService.verify(accessToken);
-    const token = this.jwtService.sign({
-      email: tokenPayload.email,
-      subject: tokenPayload.subject,
+    let tokenPayload = this.jwtService.verify(accessToken, {
+      secret: jwtConstants.accessSecret,
     });
-    tokenPayload = this.jwtService.verify(token);
+    const token = this.jwtService.sign(
+      {
+        email: tokenPayload.email,
+        subject: tokenPayload.subject,
+      },
+      {
+        secret: jwtConstants.refreshSecret,
+      },
+    );
+    tokenPayload = this.jwtService.verify(token, {
+      secret: jwtConstants.refreshSecret,
+    });
     const type = TokenTypeEnum;
     const expirationDate = new Date(tokenPayload.exp * 1000);
     await this.insertToken(
@@ -99,7 +120,7 @@ export class AuthService {
 
       await this.dbClient.query<TokensDto>(
         `insert into tokens (user_id, type, token, expires_at, revoked_at)
-         values ($1, $2, $3, $4, $5);`,
+                 values ($1, $2, $3, $4, $5);`,
         [userId, type, token, expires_at, revoked_at],
       );
     } catch (e) {
@@ -110,10 +131,10 @@ export class AuthService {
   async revokeTokenByToken(token: string) {
     await this.dbClient.query<TokensDto>(
       `update tokens
-       set revoked_by = 1,
-           is_revoked = true
-       where token = $1;
-      `,
+             set revoked_by = 1,
+                 is_revoked = true
+             where token = $1;
+            `,
       [token],
     );
   }

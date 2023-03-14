@@ -9,21 +9,21 @@ export class CreateUserDto {
   @IsString()
   readonly password: string;
   @IsNumber()
-  readonly status: number;
+  readonly status?: number;
   @IsNumber()
   readonly group_id: number;
   @IsNumber()
-  readonly org_id: number;
+  readonly org_id?: number;
   @IsNumber()
   readonly role_id: number;
   @IsNumber()
-  readonly client_id: number;
+  readonly client_id?: number;
   @IsNumber()
-  readonly rate: number;
+  readonly rate?: number;
   @IsString()
-  readonly quota_percent: string;
+  readonly quota_percent?: string;
   @IsString()
-  readonly lastname: string;
+  readonly lastname?: string;
   @IsString()
-  readonly name: string;
+  readonly name?: string;
 }

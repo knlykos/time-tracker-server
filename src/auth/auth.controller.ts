@@ -40,7 +40,6 @@ export class AuthController {
     }
   }
 
-  @UseGuards(AuthGuard('jwt-access'))
   @Post('refresh-token')
   async refreshToken(@Body() body: RefreshTokenDto) {
     await this.authService.refreshToken(body.accessToken);

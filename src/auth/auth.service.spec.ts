@@ -1,12 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { JwtModule } from '@nestjs/jwt';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtActivationStrategy } from './strategies/jwt-activation-strategy';
 import { UserModule } from '../user/user.module';
 import { jwtConstants } from './constants/constants';
 import { ConfigModule } from '@nestjs/config';
 import { NkodexDbModule } from '@nkodex-db/nkodex-db';
 import { TokenTypeEnum } from './types/token-type.enum/token-type.enum';
+import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
+import { JwtRefreshStrategy } from './strategies/jwt-refresh-strategy';
+import { CreateUserDto } from '../user/dto/create-user.dto/create-user.dto';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 
 describe.only('AuthService', () => {
   let service: AuthService;
@@ -26,11 +31,36 @@ describe.only('AuthService', () => {
           max: +process.env.PG_MAX_CONNECTIONS,
         }),
         JwtModule.register({
-          secret: jwtConstants.secret,
+          secret: jwtConstants.accessSecret,
           signOptions: { expiresIn: '30d', issuer: 'NKODEX' },
         }),
+        MailerModule.forRoot({
+          transport: {
+            host: 'smtp.ethereal.email',
+            port: 587,
+            auth: {
+              user: 'ambrose.wunsch@ethereal.email',
+              pass: 'UvbSGEfpKdsgeVXVqE',
+            },
+          },
+          defaults: {
+            from: '"nest-modules" <modules@nestjs.com>',
+          },
+          template: {
+            dir: __dirname + '/common/email-templates',
+            adapter: new HandlebarsAdapter(),
+            options: {
+              strict: true,
+            },
+          },
+        }),
       ],
-      providers: [AuthService, JwtStrategy],
+      providers: [
+        AuthService,
+        JwtAccessStrategy,
+        JwtRefreshStrategy,
+        JwtActivationStrategy,
+      ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
@@ -87,5 +117,21 @@ describe.only('AuthService', () => {
       payload.confirm_password,
     );
     await service.revokeTokenByToken(token.accessToken);
+  });
+
+  it('Should test register', async () => {
+    const dir = __dirname + '/common/email-templates';
+    console.log(dir);
+    const payload: CreateUserDto = {
+      email: 'nefi.lopezg@gmail.com1',
+      group_id: 1,
+      username: 'nefi.lopez1',
+      password: 'Nefo123..',
+      status: 1,
+      role_id: 1,
+      lastname: 'Lopez',
+      name: 'Nefi',
+    };
+    await service.register(payload);
   });
 });

@@ -8,29 +8,28 @@ import { CreateUserDto } from './dto/create-user.dto/create-user.dto';
 export class UserService {
   constructor(@Inject('PG_CONNECTION') private dbClient: PoolClient) {}
 
-  async create(payload: CreateUserDto) {
-    const saltOrRounds = 10;
-    const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
-    await this.dbClient.query(
-      `INSERT INTO users (email, password, username, password, status, group_id, org_id, role_id, client_id, rate,
-                          quota_percent, lastname, name)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-      [
-        payload.email,
-        hashedPassword,
-        payload.username,
-        payload.status,
-        payload.group_id,
-        payload.org_id,
-        payload.role_id,
-        payload.client_id,
-        payload.rate,
-        payload.quota_percent,
-        payload.lastname,
-        payload.name,
-      ],
-    );
+  async create(payload: CreateUserDto): Promise<CreateUserDto> {
+    // TODO: password is not null and verify comments on table
     try {
+      const status = 3;
+      const roleId = 2;
+      const saltOrRounds = 10;
+      const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
+      const user = await this.dbClient.query<CreateUserDto>(
+        `INSERT INTO users (email, password, username, status, group_id, org_id, role_id, client_id)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [
+          payload.email,
+          hashedPassword,
+          payload.username,
+          status,
+          payload.group_id,
+          payload.org_id,
+          roleId,
+          payload.client_id,
+        ],
+      );
+      return user.rows[0];
     } catch (error) {
       throw error;
     }
@@ -39,8 +38,8 @@ export class UserService {
   async findOneById(id: number) {
     const result = await this.dbClient.query(
       `SELECT *
-       FROM users
-       WHERE id = $1`,
+             FROM users
+             WHERE id = $1`,
       [id],
     );
     return result.rows;
@@ -50,8 +49,8 @@ export class UserService {
     try {
       const result = await this.dbClient.query<any>(
         `SELECT *
-         FROM users
-         WHERE email = $1`,
+                 FROM users
+                 WHERE email = $1`,
         [email],
       );
       return result.rows[0];
@@ -65,8 +64,8 @@ export class UserService {
     const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
     await this.dbClient.query(
       `UPDATE users
-       SET password = $1
-       WHERE id = $2`,
+             SET password = $1
+             WHERE id = $2`,
       [hashedPassword, payload.id],
     );
     try {
@@ -78,8 +77,8 @@ export class UserService {
   async delete(payload: any) {
     await this.dbClient.query(
       `DELETE
-       FROM users
-       WHERE id = $1`,
+             FROM users
+             WHERE id = $1`,
       [payload.id],
     );
     try {

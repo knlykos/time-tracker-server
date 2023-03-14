@@ -1,5 +1,4 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Prisma, tasks } from '@prisma/client';
 import { UserController } from 'src/user/user.controller';
 
 @Injectable()
