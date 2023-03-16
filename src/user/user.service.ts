@@ -1,8 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import * as bcrypt from 'bcrypt';
 import { PoolClient } from 'pg';
 import { CreateUserDto } from './dto/create-user.dto/create-user.dto';
+import { AuthenticationErrors } from '../auth/constants/auth-error-messages';
+import { UserErrorMessages } from './constant/common/user-error-messages';
 
 @Injectable()
 export class UserService {
@@ -53,7 +55,11 @@ export class UserService {
                  WHERE email = $1`,
         [email],
       );
-      return result.rows[0];
+      if (result.rows.length > 0) {
+        return result.rows[0];
+      } else {
+        throw new NotFoundException(UserErrorMessages.EMAIL_NOT_FOUND);
+      }
     } catch (error) {
       throw error;
     }

@@ -23,6 +23,7 @@ export class AuthController {
   @Post('login')
   async login(@Body() body: LoginAuthDto) {
     // password = 'Nefo123..';
+    debugger;
     if (body.password !== body.confirm_password) {
       throw new NotAcceptableException(
         'Password and confirm password must be the same',

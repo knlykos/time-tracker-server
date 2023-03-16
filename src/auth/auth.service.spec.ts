@@ -12,8 +12,9 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh-strategy';
 import { CreateUserDto } from '../user/dto/create-user.dto/create-user.dto';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { NotFoundException } from '@nestjs/common';
 
-describe.only('AuthService', () => {
+describe('AuthService', () => {
   let service: AuthService;
 
   beforeEach(async () => {
@@ -84,6 +85,42 @@ describe.only('AuthService', () => {
     expect(accessToken).toHaveProperty('accessToken');
   });
 
+  it.only('Shoud Test Login with wrong password', async () => {
+    const payload = {
+      email: 'nefi.lopezg@gmail.com',
+      password: 'Nefo123.!!!.%',
+      confirm_password: 'Nefo123.!!!.%',
+    };
+    try {
+      const accessToken = await service.login(
+        payload.email,
+        payload.password,
+        payload.confirm_password,
+      );
+      expect(accessToken).toHaveProperty('accessToken');
+    } catch (e) {
+      console.log(e);
+      expect(e).toBeInstanceOf(NotFoundException);
+    }
+  });
+
+  it('Shoud Test Login using an not register email', async () => {
+    const payload = {
+      email: 'nefi.lopezg@gmail.com2',
+      password: 'Nefo123..',
+      confirm_password: 'Nefo123..',
+    };
+
+    try {
+      await service.login(
+        payload.email,
+        payload.password,
+        payload.confirm_password,
+      );
+    } catch (e) {
+      expect(e).toBeInstanceOf(NotFoundException);
+    }
+  });
   it('Should refreshToken return an valid accessToken', async () => {
     const accessToken =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im5lZmkubG9wZXpnQGdtYWlsLmNvbSIsInN1YmplY3QiOjEsImlhdCI6MTY3ODY1NjY4NiwiZXhwIjoxNjgxMjQ4Njg2LCJpc3MiOiJOS09ERVgifQ._fDJcQLYB9QpbBPZQ4Xv0zqb0kKP2XvuOh-klDkAekA';
