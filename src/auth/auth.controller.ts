@@ -23,13 +23,13 @@ export class AuthController {
   @Post('login')
   async login(@Body() body: LoginAuthDto) {
     // password = 'Nefo123..';
-    debugger;
-    if (body.password !== body.confirm_password) {
-      throw new NotAcceptableException(
-        'Password and confirm password must be the same',
-      );
-    }
     try {
+      if (body.password !== body.confirm_password) {
+        throw new NotAcceptableException(
+          'Password and confirm password must be the same',
+        );
+      }
+
       const accessToken = await this.authService.login(
         body.email,
         body.password,
@@ -37,7 +37,7 @@ export class AuthController {
       );
       return accessToken;
     } catch (e) {
-      console.log(e);
+      throw e;
     }
   }
 

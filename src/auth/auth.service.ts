@@ -44,7 +44,7 @@ export class AuthService {
         throw new UnauthorizedException('Passwords do not match');
       }
       const user = await this.userService.findOneByEmail(email);
-      const passwordMatch = new Promise<boolean>((resolve, reject) => {
+      const passwordMatch = await new Promise<boolean>((resolve, reject) => {
         bcrypt.compare(password, user.password, (err, result) => {
           if (err) {
             reject(err);
@@ -73,8 +73,11 @@ export class AuthService {
       } else {
         throw new UnauthorizedException();
       }
-    } catch (error) {
-      throw error;
+    } catch (e) {
+      if (e instanceof UnauthorizedException) {
+        throw new UnauthorizedException();
+      }
+      throw new InternalServerErrorException();
     }
   }
 
@@ -117,10 +120,9 @@ export class AuthService {
   ) {
     try {
       const revoked_at = new Date(0);
-
       await this.dbClient.query<TokensDto>(
         `insert into tokens (user_id, type, token, expires_at, revoked_at)
-                 values ($1, $2, $3, $4, $5);`,
+         values ($1, $2, $3, $4, $5);`,
         [userId, type, token, expires_at, revoked_at],
       );
     } catch (e) {
@@ -131,10 +133,10 @@ export class AuthService {
   async revokeTokenByToken(token: string) {
     await this.dbClient.query<TokensDto>(
       `update tokens
-             set revoked_by = 1,
-                 is_revoked = true
-             where token = $1;
-            `,
+       set revoked_by = 1,
+           is_revoked = true
+       where token = $1;
+      `,
       [token],
     );
   }
