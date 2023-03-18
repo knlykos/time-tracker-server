@@ -15,6 +15,7 @@ import { CreateUserDto } from '../user/dto/create-user.dto/create-user.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { jwtConstants } from './constants/constants';
 import { MailerService } from '@nestjs-modules/mailer';
+import { HttpException } from '@nestjs/common/exceptions/http.exception';
 
 @Injectable()
 export class AuthService {
@@ -74,8 +75,8 @@ export class AuthService {
         throw new UnauthorizedException();
       }
     } catch (e) {
-      if (e instanceof UnauthorizedException) {
-        throw new UnauthorizedException();
+      if (e instanceof HttpException) {
+        throw e;
       }
       throw new InternalServerErrorException();
     }
