@@ -13,6 +13,7 @@ import { CreateUserDto } from './dto/create-user.dto/create-user.dto';
 import { AuthenticationErrors } from '../auth/constants/auth-error-messages';
 import { UserErrorMessages } from './constant/common/user-error-messages';
 import { HttpException } from '@nestjs/common/exceptions/http.exception';
+import { UserDto } from './dto/user.dto/userDto';
 
 @Injectable()
 export class UserService {
@@ -77,9 +78,9 @@ export class UserService {
     return result.rows;
   }
 
-  async findOneByEmail(email: string): Promise<any> {
+  async findOneByEmail(email: string): Promise<UserDto> {
     try {
-      const result = await this.dbClient.query<any>(
+      const result = await this.dbClient.query<UserDto>(
         `SELECT *
          FROM users
          WHERE email = $1`,
@@ -88,7 +89,7 @@ export class UserService {
       if (result.rows.length > 0) {
         return result.rows[0];
       } else {
-        throw new NotFoundException(UserErrorMessages.EMAIL_NOT_FOUND);
+        new NotFoundException(UserErrorMessages.EMAIL_NOT_FOUND);
       }
     } catch (error) {
       if (error instanceof HttpException) {
@@ -110,6 +111,35 @@ export class UserService {
     try {
     } catch (error) {
       throw error;
+    }
+  }
+
+  async activateUser(email: string) {
+    try {
+      const userStatus = await this.dbClient.query(
+        'SELECT status FROM users WHERE email = $1',
+        [email],
+      );
+      if (userStatus.rows[0].status === 3) {
+        const result = await this.dbClient.query(
+          `UPDATE users
+           SET status = 1
+           WHERE email = $1`,
+          [email],
+        );
+        if (result.rowCount === 0) {
+          throw new NotFoundException(UserErrorMessages.EMAIL_NOT_FOUND);
+        }
+      } else {
+        throw new BadRequestException(
+          AuthenticationErrors.ACCOUNT_ALREADY_ACTIVE,
+        );
+      }
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException();
     }
   }
 

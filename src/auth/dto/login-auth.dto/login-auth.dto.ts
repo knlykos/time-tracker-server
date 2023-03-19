@@ -1,11 +1,17 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsString } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
+import { UserDto } from '../../../user/dto/user.dto/userDto';
 
-export class LoginAuthDto {
-  @IsEmail()
-  readonly email: string;
+export class LoginAuthDto extends PartialType(UserDto) {
+  // TODO: add min y max validation for password and confirmation
   @IsString()
-  @MinLength(6)
-  readonly password: string;
-  @IsString()
-  readonly confirm_password: string;
+  confirmation: string;
+
+  // @IsEmail()
+  // readonly email: string;
+  // @IsString()
+  // @MinLength(6)
+  // readonly password: string;
+  // @IsString()
+  // readonly confirm_password: string;
 }

@@ -1,10 +1,8 @@
 import {
-  ConflictException,
   Inject,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
-  UseGuards,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
@@ -13,7 +11,6 @@ import { TokenTypeEnum } from './types/token-type.enum/token-type.enum';
 import { PoolClient } from 'pg';
 import { TokensDto } from './dto/tokens.dto/tokens.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto/create-user.dto';
-import { AuthGuard } from '@nestjs/passport';
 import { jwtConstants } from './constants/constants';
 import { MailerService } from '@nestjs-modules/mailer';
 import { HttpException } from '@nestjs/common/exceptions/http.exception';
@@ -60,13 +57,13 @@ export class AuthService {
         reject(e);
       }
     });
-    const user = await this.userService.create<void>(payload, promise);
+    await this.userService.create<void>(payload, promise);
   }
 
   async login(email: string, password: string, confirmation: string) {
     try {
       if (password !== confirmation) {
-        throw new UnauthorizedException('Passwords do not match');
+        new UnauthorizedException('Passwords do not match');
       }
       const user = await this.userService.findOneByEmail(email);
       const passwordMatch = await new Promise<boolean>((resolve, reject) => {
@@ -96,7 +93,7 @@ export class AuthService {
         );
         return { accessToken: token };
       } else {
-        throw new UnauthorizedException();
+        new UnauthorizedException();
       }
     } catch (e) {
       if (e instanceof HttpException) {
@@ -133,10 +130,6 @@ export class AuthService {
     return { refreshToken: token };
   }
 
-  async logout(refreshToken): Promise<void> {
-    console.log('');
-  }
-
   async insertToken(
     userId: number,
     type: TokenTypeEnum,
@@ -164,5 +157,23 @@ export class AuthService {
       `,
       [token],
     );
+  }
+
+  async activation(token: string) {
+    try {
+      const verifyRes = this.jwtService.verify<{ email: string }>(token, {
+        secret: jwtConstants.activationSecret,
+      });
+
+      await this.userService.activateUser(verifyRes.email);
+    } catch (e) {
+      if (e.constructor.name === 'JsonWebTokenError') {
+        throw new UnauthorizedException('Invalid token');
+      }
+      if (e instanceof HttpException) {
+        throw e;
+      }
+      throw new InternalServerErrorException();
+    }
   }
 }

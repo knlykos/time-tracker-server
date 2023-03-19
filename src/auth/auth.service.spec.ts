@@ -13,6 +13,7 @@ import { CreateUserDto } from '../user/dto/create-user.dto/create-user.dto';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { NotFoundException } from '@nestjs/common';
+import { LoginAuthDto } from './dto/login-auth.dto/login-auth.dto';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -37,18 +38,18 @@ describe('AuthService', () => {
         }),
         MailerModule.forRoot({
           transport: {
-            host: 'smtp.ethereal.email',
-            port: 587,
+            host: process.env.MAIL_HOST,
+            port: +process.env.MAIL_PORT,
             auth: {
-              user: 'ambrose.wunsch@ethereal.email',
-              pass: 'UvbSGEfpKdsgeVXVqE',
+              user: process.env.MAIL_USERNAME,
+              pass: process.env.MAIL_PASSWORD,
             },
           },
           defaults: {
             from: '"nest-modules" <modules@nestjs.com>',
           },
           template: {
-            dir: __dirname + './public/email-templates',
+            dir: './public/email-templates',
             adapter: new HandlebarsAdapter(),
             options: {
               strict: true,
@@ -85,7 +86,7 @@ describe('AuthService', () => {
     expect(accessToken).toHaveProperty('accessToken');
   });
 
-  it.only('Shoud Test Login with wrong password', async () => {
+  it('Shoud Test Login with wrong password', async () => {
     const payload = {
       email: 'nefi.lopezg@gmail.com',
       password: 'Nefo123.!!!.%',
@@ -105,17 +106,17 @@ describe('AuthService', () => {
   });
 
   it('Shoud Test Login using an not register email', async () => {
-    const payload = {
+    const payload: LoginAuthDto = {
       email: 'nefi.lopezg@gmail.com2',
       password: 'Nefo123..',
-      confirm_password: 'Nefo123..',
+      confirmation: 'Nefo123..',
     };
 
     try {
       await service.login(
         payload.email,
         payload.password,
-        payload.confirm_password,
+        payload.confirmation,
       );
     } catch (e) {
       expect(e).toBeInstanceOf(NotFoundException);
@@ -157,14 +158,20 @@ describe('AuthService', () => {
   });
 
   it('Should test register', async () => {
-    const dir = __dirname + '/common/email-templates';
-    console.log(dir);
     const payload: CreateUserDto = {
-      email: 'nefi.lopezg@gmail.com1',
-      username: 'nefi.lopez1',
+      email: 'nefi.lopewzg@gmail.com',
+      username: 'nefwi.lopez1',
       password: 'Nefo123..',
       confirmation: 'Nefo123..',
     };
     await service.register(payload);
+  });
+
+  it('Should test activation endpoint', async () => {
+    // const activationLink =
+    // 'http://localhost:3000/auth/activation/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im5lZmkubG9wZXpnQGdtYWlsLmNvbTEiLCJpYXQiOjE2NzkyMzU5NzAsImV4cCI6MTY4MTgyNzk3MCwiaXNzIjoiTktPREVYIn0.tZv-zDN3A8I6uWlrs1lzAZlX_YK1YsbkqCqwx6INX2Q';
+    const activationToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im5lZmkubG9wZXpnQGdtYWlsLmNvbTEiLCJpYXQiOjE2NzkyMzU5NzAsImV4cCI6MTY4MTgyNzk3MCwiaXNzIjoiTktPREVYIn0.tZv-zDN3A8I6uWlrs1lzAZlX_YK1YsbkqCqwx6INX2Q';
+    await service.activation(activationToken);
   });
 });

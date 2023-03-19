@@ -3,12 +3,10 @@ import {
   Controller,
   Get,
   HttpException,
-  Inject,
   InternalServerErrorException,
   NotAcceptableException,
   Param,
   Post,
-  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login-auth.dto/login-auth.dto';
@@ -25,8 +23,8 @@ export class AuthController {
   async login(@Body() body: LoginAuthDto) {
     // password = 'Nefo123..';
     try {
-      if (body.password !== body.confirm_password) {
-        throw new NotAcceptableException(
+      if (body.password !== body.confirmation) {
+        new NotAcceptableException(
           'Password and confirm password must be the same',
         );
       }
@@ -34,7 +32,7 @@ export class AuthController {
       const accessToken = await this.authService.login(
         body.email,
         body.password,
-        body.confirm_password,
+        body.confirmation,
       );
       return accessToken;
     } catch (e) {
@@ -67,7 +65,18 @@ export class AuthController {
 
   @Get('activation/:token')
   async activation(@Param('token') token: string) {
-    return 'activated';
+    try {
+      await this.authService.activation(token);
+      const response: ApiResponse<void> = {
+        message: AuthSuccessMessages.ACCOUNT_ACTIVATED,
+      };
+      return response;
+    } catch (e) {
+      if (e instanceof HttpException) {
+        throw e;
+      }
+      throw new InternalServerErrorException();
+    }
   }
 
   //

@@ -9,4 +9,5 @@ export enum AuthenticationErrors {
   PASSWORD_TOO_SHORT = 'Password must be at least X characters long',
   PASSWORD_REQUIREMENTS_NOT_MET = 'Password must contain at least one letter and one number',
   PASSWORDS_DO_NOT_MATCH = 'Passwords do not match',
+  ACCOUNT_ALREADY_ACTIVE = 'Account already active',
 }
