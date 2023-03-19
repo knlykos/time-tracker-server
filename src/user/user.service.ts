@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  ConflictException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -6,7 +8,7 @@ import {
 } from '@nestjs/common';
 
 import * as bcrypt from 'bcrypt';
-import { PoolClient } from 'pg';
+import { DatabaseError, PoolClient } from 'pg';
 import { CreateUserDto } from './dto/create-user.dto/create-user.dto';
 import { AuthenticationErrors } from '../auth/constants/auth-error-messages';
 import { UserErrorMessages } from './constant/common/user-error-messages';
@@ -16,13 +18,17 @@ import { HttpException } from '@nestjs/common/exceptions/http.exception';
 export class UserService {
   constructor(@Inject('PG_CONNECTION') private dbClient: PoolClient) {}
 
-  async create(payload: CreateUserDto): Promise<CreateUserDto> {
+  async create<T>(
+    payload: CreateUserDto,
+    promise?: Promise<T>,
+  ): Promise<CreateUserDto> {
     // TODO: password is not null and verify comments on table
     try {
       const status = 3;
       const roleId = 2;
       const saltOrRounds = 10;
       const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
+      await this.dbClient.query('BEGIN');
       const user = await this.dbClient.query<CreateUserDto>(
         `INSERT INTO users (email, password, username, status, group_id, org_id, role_id, client_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -38,9 +44,26 @@ export class UserService {
           payload.client_id,
         ],
       );
+      if (promise) {
+        await promise;
+      }
+      await this.dbClient.query('COMMIT');
       return user.rows[0];
     } catch (error) {
-      throw error;
+      await this.dbClient.query('ROLLBACK');
+      if (error instanceof DatabaseError) {
+        const message: string = error.message;
+        if (error.code === '23505') {
+          if (message.includes('email')) {
+            throw new ConflictException(UserErrorMessages.EMAIL_ALREADY_IN_USE);
+          } else if (message.includes('username')) {
+            throw new ConflictException(
+              UserErrorMessages.USERNAME_ALREADY_IN_USE,
+            );
+          }
+        }
+      }
+      throw new BadRequestException();
     }
   }
 

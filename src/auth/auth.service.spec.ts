@@ -48,7 +48,7 @@ describe('AuthService', () => {
             from: '"nest-modules" <modules@nestjs.com>',
           },
           template: {
-            dir: __dirname + '/common/email-templates',
+            dir: __dirname + './public/email-templates',
             adapter: new HandlebarsAdapter(),
             options: {
               strict: true,
@@ -161,13 +161,9 @@ describe('AuthService', () => {
     console.log(dir);
     const payload: CreateUserDto = {
       email: 'nefi.lopezg@gmail.com1',
-      group_id: 1,
       username: 'nefi.lopez1',
       password: 'Nefo123..',
-      status: 1,
-      role_id: 1,
-      lastname: 'Lopez',
-      name: 'Nefi',
+      confirmation: 'Nefo123..',
     };
     await service.register(payload);
   });

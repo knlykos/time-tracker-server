@@ -4,17 +4,18 @@ import {
   Get,
   HttpException,
   Inject,
+  InternalServerErrorException,
   NotAcceptableException,
   Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { Connection } from 'pg';
 import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login-auth.dto/login-auth.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto/refresh-token.dto';
-import { JwtService } from '@nestjs/jwt';
-import { AuthGuard } from '@nestjs/passport';
+import { CreateUserDto } from '../user/dto/create-user.dto/create-user.dto';
+import { ApiResponse } from '../common/response-types/api.response';
+import { AuthSuccessMessages } from './constants/auth-success-messages';
 
 @Controller('auth')
 export class AuthController {
@@ -46,10 +47,29 @@ export class AuthController {
     await this.authService.refreshToken(body.accessToken);
   }
 
-  // register() {
-  //   return;
-  //   ('register');
-  // }
+  @Post('register')
+  async register(@Body() body: CreateUserDto): Promise<ApiResponse<void>> {
+    try {
+      await this.authService.register(body);
+      const response: ApiResponse<void> = {
+        message: AuthSuccessMessages.ACCOUNT_REGISTERED,
+      };
+      return response;
+    } catch (e) {
+      console.log(e);
+      if (e instanceof HttpException) {
+        throw e;
+      } else {
+        throw new InternalServerErrorException();
+      }
+    }
+  }
+
+  @Get('activation/:token')
+  async activation(@Param('token') token: string) {
+    return 'activated';
+  }
+
   //
   // activate() {
   //   return 'activate';

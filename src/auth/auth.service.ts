@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -16,6 +17,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { jwtConstants } from './constants/constants';
 import { MailerService } from '@nestjs-modules/mailer';
 import { HttpException } from '@nestjs/common/exceptions/http.exception';
+import { ConfigService } from '@nestjs/config';
+import { AuthenticationErrors } from './constants/auth-error-messages';
 
 @Injectable()
 export class AuthService {
@@ -24,19 +27,40 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly mailerService: MailerService,
     @Inject('PG_CONNECTION') private dbClient: PoolClient,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(payload: CreateUserDto) {
-    // const user = await this.userService.create(payload);
-    await this.mailerService.sendMail({
-      to: 'nlopezg87@gmail.com',
-      from: 'noreply@nkodex.dev',
-      subject: 'Activation',
-      template: 'activation-email-template',
-      context: {
-        activateLink: 'http://localhost:3000/activation/121212',
-      },
+    if (payload.password !== payload.confirmation) {
+      throw new UnauthorizedException(
+        AuthenticationErrors.PASSWORDS_DO_NOT_MATCH,
+      );
+    }
+    const promise = new Promise<void>(async (resolve, reject) => {
+      try {
+        const appUrl = this.configService.get('APP_URL');
+        const activationToken = this.jwtService.sign(
+          {
+            email: payload.email,
+          },
+          { secret: jwtConstants.activationSecret, expiresIn: '30d' },
+        );
+
+        await this.mailerService.sendMail({
+          to: 'nlopezg87@gmail.com',
+          from: 'noreply@nkodex.dev',
+          subject: 'Activation',
+          template: 'activation',
+          context: {
+            activateLink: `${appUrl}/auth/activation/${activationToken}`,
+          },
+        });
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
     });
+    const user = await this.userService.create<void>(payload, promise);
   }
 
   async login(email: string, password: string, confirmation: string) {

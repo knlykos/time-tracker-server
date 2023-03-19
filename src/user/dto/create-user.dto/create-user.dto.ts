@@ -1,29 +1,15 @@
-import { IsEmail, IsNumber, IsString } from 'class-validator';
+import { IsEmail, IsNumber, IsOptional, IsString } from 'class-validator';
+import { UserDtoTs } from '../user.dto.ts/user.dto.ts';
+import { PartialType } from '@nestjs/mapped-types';
 
-export class CreateUserDto {
+export class CreateUserDto extends PartialType(UserDtoTs) {
+  @IsString()
+  confirmation: string;
   // readonly id: number;
-  @IsEmail()
-  readonly email: string;
-  @IsString()
-  readonly username: string;
-  @IsString()
-  readonly password: string;
-  @IsNumber()
-  readonly status?: number;
-  @IsNumber()
-  readonly group_id: number;
-  @IsNumber()
-  readonly org_id?: number;
-  @IsNumber()
-  readonly role_id: number;
-  @IsNumber()
-  readonly client_id?: number;
-  @IsNumber()
-  readonly rate?: number;
-  @IsString()
-  readonly quota_percent?: string;
-  @IsString()
-  readonly lastname?: string;
-  @IsString()
-  readonly name?: string;
+  // @IsEmail()
+  // readonly email: string;
+  // @IsString()
+  // readonly username: string;
+  // @IsString()
+  // readonly password: string;
 }

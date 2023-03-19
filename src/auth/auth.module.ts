@@ -11,28 +11,35 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh-strategy';
+import { ConfigModule } from '@nestjs/config';
+
+console.log(process.env);
 
 @Module({
   imports: [
     UserModule,
+    ConfigModule.forRoot({
+      envFilePath: '.development.env',
+    }),
     JwtModule.register({
       secret: jwtConstants.accessSecret,
       signOptions: { expiresIn: '30d', issuer: 'NKODEX' },
     }),
+
     MailerModule.forRoot({
       transport: {
-        host: 'smtp.ethereal.email',
-        port: 587,
+        host: process.env.MAIL_HOST,
+        port: +process.env.MAIL_PORT,
         auth: {
-          user: 'ambrose.wunsch@ethereal.email',
-          pass: 'UvbSGEfpKdsgeVXVqE',
+          user: process.env.MAIL_USERNAME,
+          pass: process.env.MAIL_PASSWORD,
         },
       },
       defaults: {
         from: '"nest-modules" <modules@nestjs.com>',
       },
       template: {
-        dir: __dirname + '/common/email-templates',
+        dir: './public/email-templates',
         adapter: new HandlebarsAdapter(),
         options: {
           strict: true,
