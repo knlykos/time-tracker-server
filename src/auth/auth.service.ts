@@ -16,6 +16,7 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { HttpException } from '@nestjs/common/exceptions/http.exception';
 import { ConfigService } from '@nestjs/config';
 import { AuthenticationErrors } from './constants/auth-error-messages';
+import { UserEntity } from './entity/user.entity/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -63,7 +64,7 @@ export class AuthService {
   async login(email: string, password: string, confirmation: string) {
     try {
       if (password !== confirmation) {
-        new UnauthorizedException('Passwords do not match');
+        throw new UnauthorizedException('Passwords do not match');
       }
       const user = await this.userService.findOneByEmail(email);
       const passwordMatch = await new Promise<boolean>((resolve, reject) => {
@@ -93,7 +94,7 @@ export class AuthService {
         );
         return { accessToken: token };
       } else {
-        new UnauthorizedException();
+        throw new UnauthorizedException();
       }
     } catch (e) {
       if (e instanceof HttpException) {
@@ -103,31 +104,39 @@ export class AuthService {
     }
   }
 
-  async refreshToken(accessToken: string): Promise<{ refreshToken: string }> {
-    let tokenPayload = this.jwtService.verify(accessToken, {
-      secret: jwtConstants.accessSecret,
-    });
-    const token = this.jwtService.sign(
-      {
-        email: tokenPayload.email,
-        subject: tokenPayload.subject,
-      },
-      {
+  async refreshToken(
+    accessTokenPayload: UserEntity,
+  ): Promise<{ refreshToken: string }> {
+    try {
+      const token = this.jwtService.sign(
+        {
+          email: accessTokenPayload.email,
+          subject: accessTokenPayload.subject,
+        },
+        {
+          secret: jwtConstants.refreshSecret,
+        },
+      );
+      const tokenPayload = this.jwtService.verify(token, {
         secret: jwtConstants.refreshSecret,
-      },
-    );
-    tokenPayload = this.jwtService.verify(token, {
-      secret: jwtConstants.refreshSecret,
-    });
-    const type = TokenTypeEnum;
-    const expirationDate = new Date(tokenPayload.exp * 1000);
-    await this.insertToken(
-      tokenPayload.subject,
-      type.Refresh,
-      token,
-      expirationDate,
-    );
-    return { refreshToken: token };
+      });
+      const type = TokenTypeEnum;
+      const expirationDate = new Date(tokenPayload.exp * 1000);
+      await this.insertToken(
+        tokenPayload.subject,
+        type.Refresh,
+        token,
+        expirationDate,
+      );
+      return { refreshToken: token };
+    } catch (e) {
+      if (e.constructor.name === 'JsonWebTokenError') {
+        throw new UnauthorizedException(
+          'Error generating refresh token: ' + e.message,
+        );
+      }
+      throw new InternalServerErrorException();
+    }
   }
 
   async insertToken(

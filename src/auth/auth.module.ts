@@ -13,8 +13,6 @@ import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh-strategy';
 import { ConfigModule } from '@nestjs/config';
 
-console.log(process.env);
-
 @Module({
   imports: [
     UserModule,

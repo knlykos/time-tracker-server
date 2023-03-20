@@ -7,6 +7,8 @@ import {
   NotAcceptableException,
   Param,
   Post,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login-auth.dto/login-auth.dto';
@@ -14,6 +16,10 @@ import { RefreshTokenDto } from './dto/refresh-token.dto/refresh-token.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto/create-user.dto';
 import { ApiResponse } from '../common/response-types/api.response';
 import { AuthSuccessMessages } from './constants/auth-success-messages';
+import { AuthGuard } from '@nestjs/passport';
+import { JwtAccessAuthGuard } from './guards/jwt-access-auth/jwt-access-auth.guard';
+import { User } from './decorators/user.decorator';
+import { UserEntity } from './entity/user.entity/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -24,7 +30,7 @@ export class AuthController {
     // password = 'Nefo123..';
     try {
       if (body.password !== body.confirmation) {
-        new NotAcceptableException(
+        throw new NotAcceptableException(
           'Password and confirm password must be the same',
         );
       }
@@ -36,13 +42,24 @@ export class AuthController {
       );
       return accessToken;
     } catch (e) {
-      throw e;
+      if (e instanceof HttpException) {
+        throw e;
+      }
+      throw new InternalServerErrorException();
     }
   }
 
+  @UseGuards(JwtAccessAuthGuard)
   @Post('refresh-token')
-  async refreshToken(@Body() body: RefreshTokenDto) {
-    await this.authService.refreshToken(body.accessToken);
+  async refreshToken(@User() user: UserEntity) {
+    try {
+      return await this.authService.refreshToken(user);
+    } catch (e) {
+      if (e instanceof HttpException) {
+        throw e;
+      }
+      throw new InternalServerErrorException();
+    }
   }
 
   @Post('register')
@@ -54,7 +71,6 @@ export class AuthController {
       };
       return response;
     } catch (e) {
-      console.log(e);
       if (e instanceof HttpException) {
         throw e;
       } else {
