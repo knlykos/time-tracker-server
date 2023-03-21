@@ -1,4 +1,10 @@
-import { IsDate, IsEnum, IsNumber, IsString } from 'class-validator';
+import {
+  IsDate,
+  IsDateString,
+  IsEnum,
+  IsNumber,
+  IsString,
+} from 'class-validator';
 
 export class TasksDto {
   @IsNumber()
@@ -13,16 +19,16 @@ export class TasksDto {
   task_description?: string;
   @IsNumber()
   project_id?: number;
-  @IsString()
-  priority?: string;
+  @IsNumber()
+  priority?: number;
   @IsNumber()
   estimated_time?: number;
   @IsNumber()
   assignee?: number;
-  @IsDate()
-  created_at?: Date;
-  @IsDate()
-  due_date?: Date;
+  @IsDateString()
+  created_at?: Date | string;
+  @IsDateString()
+  due_date?: Date | string;
   @IsNumber()
   task_status?: number;
 }
