@@ -1,4 +1,4 @@
 export class UserEntity {
   email: string;
-  subject: string;
+  subject: number;
 }

@@ -17,6 +17,7 @@ import { jwtConstants } from './auth/constants/constants';
 import { ConfigModule } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { ProjectModule } from './project/project.module';
 
 BigInt.prototype['toJSON'] = function () {
   return this.toString();
@@ -38,6 +39,7 @@ BigInt.prototype['toJSON'] = function () {
       database: process.env.PG_DATABASE,
       max: +process.env.PG_MAX_CONNECTIONS,
     }),
+    ProjectModule,
   ],
   controllers: [AppController, UserController],
   providers: [AppService, UserService],

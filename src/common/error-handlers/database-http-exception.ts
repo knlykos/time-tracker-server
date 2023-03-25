@@ -38,6 +38,7 @@ export class DatabaseHttpException extends HttpException {
     } else if (code === '23502' && detail) {
       statusCode = HttpStatus.BAD_REQUEST;
       const match = detail.match(/violates not-null constraint "([^"]+)"/);
+      console.log(match);
       if (match && match.length === 2) {
         const column = match[1];
         responseBody = {
@@ -45,6 +46,7 @@ export class DatabaseHttpException extends HttpException {
           message: `${column} is required`,
           error: 'Bad Request',
         };
+        console.log(responseBody);
       }
     } else if (code === '22001' && detail) {
       statusCode = HttpStatus.BAD_REQUEST;

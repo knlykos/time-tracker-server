@@ -1,12 +1,9 @@
 import { Module } from '@nestjs/common';
-import { LogController } from './log.controller';
 import { LogService } from './log.service';
-import { AuthService } from '../auth/auth.service';
-import { JwtService } from '@nestjs/jwt';
+import { LogController } from './log.controller';
 
 @Module({
   controllers: [LogController],
-  providers: [LogService],
-  exports: [],
+  providers: [LogService]
 })
 export class LogModule {}

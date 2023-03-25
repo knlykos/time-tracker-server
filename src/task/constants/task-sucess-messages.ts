@@ -1,5 +1,6 @@
 // Define the enum object
 export enum TaskSucessMessages {
+  TASK_FOUND = 'Task found successfully',
   TASK_CREATED = 'Task created successfully',
   TASK_UPDATED = 'Task updated successfully',
   TASK_DELETED = 'Task deleted successfully',

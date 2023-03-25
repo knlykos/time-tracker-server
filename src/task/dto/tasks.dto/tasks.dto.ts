@@ -31,4 +31,6 @@ export class TasksDto {
   due_date?: Date | string;
   @IsNumber()
   task_status?: number;
+  @IsNumber()
+  user_id?: number;
 }
