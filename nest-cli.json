@@ -11,6 +11,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/nkodex-db/tsconfig.lib.json"
       }
+    },
+    "plant-a-tree-db": {
+      "type": "library",
+      "root": "libs/plant-a-tree-db",
+      "entryFile": "index",
+      "sourceRoot": "libs/plant-a-tree-db/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/plant-a-tree-db/tsconfig.lib.json"
+      }
     }
   },
   "compilerOptions": {

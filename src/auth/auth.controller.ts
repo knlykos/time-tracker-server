@@ -66,10 +66,8 @@ export class AuthController {
   async register(@Body() body: CreateUserDto): Promise<ApiResponse<void>> {
     try {
       await this.authService.register(body);
-      const response: ApiResponse<void> = {
-        message: AuthSuccessMessages.ACCOUNT_REGISTERED,
-      };
-      return response;
+
+      return new ApiResponse<void>(AuthSuccessMessages.ACCOUNT_REGISTERED);
     } catch (e) {
       if (e instanceof HttpException) {
         throw e;
@@ -83,10 +81,8 @@ export class AuthController {
   async activation(@Param('token') token: string) {
     try {
       await this.authService.activation(token);
-      const response: ApiResponse<void> = {
-        message: AuthSuccessMessages.ACCOUNT_ACTIVATED,
-      };
-      return response;
+
+      return new ApiResponse<void>(AuthSuccessMessages.ACCOUNT_ACTIVATED);
     } catch (e) {
       if (e instanceof HttpException) {
         throw e;

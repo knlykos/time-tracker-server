@@ -17,6 +17,9 @@ import { HttpException } from '@nestjs/common/exceptions/http.exception';
 import { ConfigService } from '@nestjs/config';
 import { AuthenticationErrors } from './constants/auth-error-messages';
 import { UserEntity } from './entity/user.entity/user.entity';
+import { Client } from 'cassandra-driver';
+import { UserStatus } from '../user/enums/user-enums';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AuthService {
@@ -24,12 +27,14 @@ export class AuthService {
     private jwtService: JwtService,
     private readonly userService: UserService,
     private readonly mailerService: MailerService,
-    @Inject('PG_CONNECTION') private dbClient: PoolClient,
+    // @Inject('PG_CONNECTION') private dbClient: PoolClient,
+    @Inject('PLANT43_DB_CASSANDRA') private dbClient: Client,
     private readonly configService: ConfigService,
   ) {}
 
   async register(payload: CreateUserDto) {
-    if (payload.password !== payload.confirmation) {
+    const userId = uuidv4();
+    if (payload.password && payload.status === UserStatus.NOT_VERIFIED) {
       throw new UnauthorizedException(
         AuthenticationErrors.PASSWORDS_DO_NOT_MATCH,
       );
@@ -58,7 +63,7 @@ export class AuthService {
         reject(e);
       }
     });
-    await this.userService.create<void>(payload, promise);
+    await this.userService.create(userId, payload);
   }
 
   async login(email: string, password: string, confirmation: string) {
@@ -147,9 +152,10 @@ export class AuthService {
   ) {
     try {
       const revoked_at = new Date(0);
-      await this.dbClient.query<TokensDto>(
+
+      await this.dbClient.execute(
         `insert into tokens (user_id, type, token, expires_at, revoked_at)
-         values ($1, $2, $3, $4, $5);`,
+                 values ($1, $2, $3, $4, $5);`,
         [userId, type, token, expires_at, revoked_at],
       );
     } catch (e) {
@@ -158,12 +164,12 @@ export class AuthService {
   }
 
   async revokeTokenByToken(token: string) {
-    await this.dbClient.query<TokensDto>(
+    await this.dbClient.execute(
       `update tokens
-       set revoked_by = 1,
-           is_revoked = true
-       where token = $1;
-      `,
+             set revoked_by = 1,
+                 is_revoked = true
+             where token = $1;
+            `,
       [token],
     );
   }

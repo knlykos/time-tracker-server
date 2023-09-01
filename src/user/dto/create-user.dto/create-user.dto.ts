@@ -3,8 +3,8 @@ import { UserDto } from '../user.dto/userDto';
 import { PartialType } from '@nestjs/mapped-types';
 
 export class CreateUserDto extends PartialType(UserDto) {
-  @IsString()
-  confirmation: string;
+  // @IsString()
+  // confirmation: string;
   // readonly id: number;
   // @IsEmail()
   // readonly email: string;

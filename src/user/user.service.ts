@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
 
 import * as bcrypt from 'bcrypt';
 import { DatabaseError, PoolClient } from 'pg';
@@ -14,65 +15,81 @@ import { AuthenticationErrors } from '../auth/constants/auth-error-messages';
 import { UserErrorMessages } from './constant/common/user-error-messages';
 import { HttpException } from '@nestjs/common/exceptions/http.exception';
 import { UserDto } from './dto/user.dto/userDto';
+import { Client, types } from 'cassandra-driver';
+import { UserStatus } from './enums/user-enums';
 
 @Injectable()
 export class UserService {
-  constructor(@Inject('PG_CONNECTION') private dbClient: PoolClient) {}
+  constructor(@Inject('PLANT43_DB_CASSANDRA') private dbClient: Client) {}
 
-  async create<T>(
-    payload: CreateUserDto,
-    promise?: Promise<T>,
-  ): Promise<CreateUserDto> {
+  async create<T>(uuid: string, payload: CreateUserDto): Promise<any> {
     // TODO: password is not null and verify comments on table
     try {
-      const status = 3;
-      const roleId = 2;
       const saltOrRounds = 10;
       const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
-      await this.dbClient.query('BEGIN');
-      const user = await this.dbClient.query<CreateUserDto>(
-        `INSERT INTO users (email, password, username, status, group_id, org_id, role_id, client_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING *`,
+      const params = [
+        uuid,
+        payload.email,
+        hashedPassword,
+        payload.username,
+        UserStatus.NOT_VERIFIED,
+        false,
+      ];
+
+      const query = this.dbClient.batch(
         [
+          {
+            query: `INSERT INTO users_by_email (user_id, email, password, username, status, is_system_user)
+                                VALUES (?, ?, ?, ?, ?, ?)`,
+            params: params,
+          },
+          {
+            query: `INSERT INTO users (user_id, email, password, username, status, is_system_user)
+                                VALUES (?, ?, ?, ?, ?, ?)`,
+            params: params,
+          },
+        ],
+        { prepare: true },
+      );
+      const user = await this.dbClient.execute(
+        `INSERT INTO users (user_id, email, password, username, status, is_system_user)
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          uuid,
           payload.email,
           hashedPassword,
           payload.username,
-          status,
-          payload.group_id,
-          payload.org_id,
-          roleId,
-          payload.client_id,
+          UserStatus.NOT_VERIFIED,
+          false,
         ],
       );
-      if (promise) {
-        await promise;
-      }
-      await this.dbClient.query('COMMIT');
-      return user.rows[0];
+      // await this.dbClient.execute('COMMIT');
+      return user.wasApplied();
+      return user.rows[0] as unknown as CreateUserDto;
     } catch (error) {
-      await this.dbClient.query('ROLLBACK');
-      if (error instanceof DatabaseError) {
-        const message: string = error.message;
-        if (error.code === '23505') {
-          if (message.includes('email')) {
-            throw new ConflictException(UserErrorMessages.EMAIL_ALREADY_IN_USE);
-          } else if (message.includes('username')) {
-            throw new ConflictException(
-              UserErrorMessages.USERNAME_ALREADY_IN_USE,
-            );
-          }
-        }
-      }
+      console.error(error);
+      // await this.dbClient.execute('ROLLBACK');
+      // if (error instanceof DatabaseError) {
+      //   const message: string = error.message;
+      //   if (error.code === '23505') {
+      //     if (message.includes('email')) {
+      //       throw new ConflictException(UserErrorMessages.EMAIL_ALREADY_IN_USE);
+      //     } else if (message.includes('username')) {
+      //       throw new ConflictException(
+      //         UserErrorMessages.USERNAME_ALREADY_IN_USE,
+      //       );
+      //     }
+      //   }
+      // }
       throw new BadRequestException();
     }
   }
 
   async findOneById(id: number) {
-    const result = await this.dbClient.query(
+    const result = await this.dbClient.execute(
       `SELECT *
-       FROM users
-       WHERE id = $1`,
+             FROM users
+             WHERE id = $1`,
       [id],
     );
     return result.rows;
@@ -80,18 +97,20 @@ export class UserService {
 
   async findOneByEmail(email: string): Promise<UserDto> {
     try {
-      const result = await this.dbClient.query<UserDto>(
-        `SELECT *
-         FROM users
-         WHERE email = $1`,
-        [email],
-      );
+      const query = 'SELECT * FROM users_by_email WHERE email = ?';
+      const params = [email];
+
+      const result = await this.dbClient.execute(query, params, {
+        prepare: true,
+      });
+      console.log(result);
       if (result.rows.length > 0) {
-        return result.rows[0];
+        return result.rows[0] as unknown as UserDto;
       } else {
-        new NotFoundException(UserErrorMessages.EMAIL_NOT_FOUND);
+        throw new NotFoundException(UserErrorMessages.EMAIL_NOT_FOUND);
       }
     } catch (error) {
+      console.log(error);
       if (error instanceof HttpException) {
         throw error;
       }
@@ -102,10 +121,10 @@ export class UserService {
   async updatePassword(payload: any) {
     const saltOrRounds = 10;
     const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
-    await this.dbClient.query(
+    await this.dbClient.execute(
       `UPDATE users
-       SET password = $1
-       WHERE id = $2`,
+             SET password = $1
+             WHERE id = $2`,
       [hashedPassword, payload.id],
     );
     try {
@@ -116,18 +135,18 @@ export class UserService {
 
   async activateUser(email: string) {
     try {
-      const userStatus = await this.dbClient.query(
+      const userStatus = await this.dbClient.execute(
         'SELECT status FROM users WHERE email = $1',
         [email],
       );
       if (userStatus.rows[0].status === 3) {
-        const result = await this.dbClient.query(
+        const result = await this.dbClient.execute(
           `UPDATE users
-           SET status = 1
-           WHERE email = $1`,
+                     SET status = 1
+                     WHERE email = $1`,
           [email],
         );
-        if (result.rowCount === 0) {
+        if (result.rows.length === 0) {
           throw new NotFoundException(UserErrorMessages.EMAIL_NOT_FOUND);
         }
       } else {
@@ -144,10 +163,10 @@ export class UserService {
   }
 
   async delete(payload: any) {
-    await this.dbClient.query(
+    await this.dbClient.execute(
       `DELETE
-       FROM users
-       WHERE id = $1`,
+             FROM users
+             WHERE id = $1`,
       [payload.id],
     );
     try {

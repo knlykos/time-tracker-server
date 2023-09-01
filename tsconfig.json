@@ -23,6 +23,12 @@
       ],
       "@nkodex-db/nkodex-db/*": [
         "libs/nkodex-db/src/*"
+      ],
+      "@plant43db/plant-a-tree-db": [
+        "libs/plant-a-tree-db/src"
+      ],
+      "@plant43db/plant-a-tree-db/*": [
+        "libs/plant-a-tree-db/src/*"
       ]
     }
   }

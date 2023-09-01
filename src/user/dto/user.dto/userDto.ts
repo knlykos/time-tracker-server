@@ -1,7 +1,7 @@
-import { IsEmail, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 export class UserDto {
-  @IsNumber()
+  @IsString()
   readonly id: number;
   @IsEmail()
   readonly email?: string;
@@ -9,27 +9,9 @@ export class UserDto {
   readonly username?: string;
   @IsString()
   readonly password?: string;
-  @IsNumber()
-  @IsOptional()
-  readonly status?: number;
-  @IsNumber()
-  @IsOptional()
-  readonly group_id?: number;
-  @IsNumber()
-  @IsOptional()
-  readonly org_id?: number;
-  @IsNumber()
-  @IsOptional()
-  readonly role_id?: number;
-  @IsNumber()
-  @IsOptional()
-  readonly client_id?: number;
-  @IsNumber()
-  @IsOptional()
-  readonly rate?: number;
   @IsString()
   @IsOptional()
-  readonly quota_percent?: string;
+  readonly status?: string;
   @IsString()
   @IsOptional()
   readonly lastname?: string;
