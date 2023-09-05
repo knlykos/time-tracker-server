@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  InternalServerErrorException,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -21,17 +23,23 @@ export class UserController {
   @Post()
   async create(@Body() user: CreateUserDto) {
     // const apiResponse = new ApiResponse();
+    const userId = uuidv4();
     try {
-      const userId = uuidv4();
       const foundUser = await this.userService.findOneByEmail(user.email);
       if (foundUser) {
         return new ApiResponse<void>('User already exists');
       }
-      const userWasApplied = await this.userService.create(userId, user);
-      if (userWasApplied) {
-        return;
-      }
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        try {
+          const userWasApplied = await this.userService.create(userId, user);
+          if (userWasApplied) {
+            return new ApiResponse<void>('User was created');
+          }
+        } catch (e) {
+          throw new InternalServerErrorException();
+        }
+      }
       throw error;
     }
   }

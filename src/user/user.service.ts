@@ -16,7 +16,8 @@ import { UserErrorMessages } from './constant/common/user-error-messages';
 import { HttpException } from '@nestjs/common/exceptions/http.exception';
 import { UserDto } from './dto/user.dto/userDto';
 import { Client, types } from 'cassandra-driver';
-import { UserStatus } from './enums/user-enums';
+import { UserStatusEnum } from './enums/user-enums';
+import { AuthSuccessMessages } from '../auth/constants/auth-success-messages';
 
 @Injectable()
 export class UserService {
@@ -29,67 +30,40 @@ export class UserService {
       const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
       const params = [
         uuid,
-        payload.email,
+        payload.email.toLowerCase(),
         hashedPassword,
-        payload.username,
-        UserStatus.NOT_VERIFIED,
+        payload.username.toLowerCase(),
+        UserStatusEnum.NOT_VERIFIED,
         false,
       ];
 
-      const query = this.dbClient.batch(
+      const query = await this.dbClient.batch(
         [
           {
             query: `INSERT INTO users_by_email (user_id, email, password, username, status, is_system_user)
-                                VALUES (?, ?, ?, ?, ?, ?)`,
+                    VALUES (?, ?, ?, ?, ?, ?)`,
             params: params,
           },
           {
             query: `INSERT INTO users (user_id, email, password, username, status, is_system_user)
-                                VALUES (?, ?, ?, ?, ?, ?)`,
+                    VALUES (?, ?, ?, ?, ?, ?)`,
             params: params,
           },
         ],
         { prepare: true },
       );
-      const user = await this.dbClient.execute(
-        `INSERT INTO users (user_id, email, password, username, status, is_system_user)
-                 VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          uuid,
-          payload.email,
-          hashedPassword,
-          payload.username,
-          UserStatus.NOT_VERIFIED,
-          false,
-        ],
-      );
-      // await this.dbClient.execute('COMMIT');
-      return user.wasApplied();
-      return user.rows[0] as unknown as CreateUserDto;
+
+      return query.wasApplied();
     } catch (error) {
-      console.error(error);
-      // await this.dbClient.execute('ROLLBACK');
-      // if (error instanceof DatabaseError) {
-      //   const message: string = error.message;
-      //   if (error.code === '23505') {
-      //     if (message.includes('email')) {
-      //       throw new ConflictException(UserErrorMessages.EMAIL_ALREADY_IN_USE);
-      //     } else if (message.includes('username')) {
-      //       throw new ConflictException(
-      //         UserErrorMessages.USERNAME_ALREADY_IN_USE,
-      //       );
-      //     }
-      //   }
-      // }
-      throw new BadRequestException();
+      throw new InternalServerErrorException();
     }
   }
 
   async findOneById(id: number) {
     const result = await this.dbClient.execute(
       `SELECT *
-             FROM users
-             WHERE id = $1`,
+       FROM users
+       WHERE id = $1`,
       [id],
     );
     return result.rows;
@@ -123,8 +97,8 @@ export class UserService {
     const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
     await this.dbClient.execute(
       `UPDATE users
-             SET password = $1
-             WHERE id = $2`,
+       SET password = $1
+       WHERE id = $2`,
       [hashedPassword, payload.id],
     );
     try {
@@ -133,28 +107,57 @@ export class UserService {
     }
   }
 
-  async activateUser(email: string) {
+  async activateUser(userId: string) {
     try {
-      const userStatus = await this.dbClient.execute(
-        'SELECT status FROM users WHERE email = $1',
-        [email],
+      const user = await this.dbClient.execute(
+        'SELECT * FROM users WHERE user_id = ?',
+        [userId],
       );
-      if (userStatus.rows[0].status === 3) {
-        const result = await this.dbClient.execute(
-          `UPDATE users
-                     SET status = 1
-                     WHERE email = $1`,
-          [email],
-        );
-        if (result.rows.length === 0) {
-          throw new NotFoundException(UserErrorMessages.EMAIL_NOT_FOUND);
-        }
+
+      const userByEmail = await this.dbClient.execute(
+        'SELECT * FROM users_by_email WHERE email = ?',
+        [user.rows[0].email],
+      );
+
+      if (
+        user.rows[0].status === UserStatusEnum.NOT_VERIFIED &&
+        userByEmail.rows[0].status === UserStatusEnum.NOT_VERIFIED
+      ) {
+        const resDataSet = await this.dbClient.batch([
+          {
+            query: 'UPDATE users SET status = ? WHERE user_id = ?',
+            params: [UserStatusEnum.ACTIVE, userId],
+          },
+          {
+            query: 'UPDATE users_by_email SET status = ? WHERE email = ?',
+            params: [UserStatusEnum.ACTIVE, user.rows[0].email],
+          },
+        ]);
+
+        return resDataSet.wasApplied();
       } else {
         throw new BadRequestException(
           AuthenticationErrors.ACCOUNT_ALREADY_ACTIVE,
         );
       }
+
+      // if (userStatus.rows[0].status === 3) {
+      //   // const result = await this.dbClient.execute(
+      //   //   `UPDATE users
+      //   //    SET status = 1
+      //   //    WHERE email = $1`,
+      //   //   [email],
+      //   // );
+      //   // if (result.rows.length === 0) {
+      //   //   throw new NotFoundException(UserErrorMessages.EMAIL_NOT_FOUND);
+      //   // }
+      // } else {
+      //   throw new BadRequestException(
+      //     AuthenticationErrors.ACCOUNT_ALREADY_ACTIVE,
+      //   );
+      // }
     } catch (error) {
+      console.log(error);
       if (error instanceof HttpException) {
         throw error;
       }
@@ -162,11 +165,13 @@ export class UserService {
     }
   }
 
+
+
   async delete(payload: any) {
     await this.dbClient.execute(
       `DELETE
-             FROM users
-             WHERE id = $1`,
+       FROM users
+       WHERE id = $1`,
       [payload.id],
     );
     try {

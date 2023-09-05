@@ -2,6 +2,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -18,8 +19,9 @@ import { ConfigService } from '@nestjs/config';
 import { AuthenticationErrors } from './constants/auth-error-messages';
 import { UserEntity } from './entity/user.entity/user.entity';
 import { Client } from 'cassandra-driver';
-import { UserStatus } from '../user/enums/user-enums';
+import { UserStatusEnum } from '../user/enums/user-enums';
 import { v4 as uuidv4 } from 'uuid';
+import { ApiResponse } from '../common/response-types/api.response';
 
 @Injectable()
 export class AuthService {
@@ -27,43 +29,57 @@ export class AuthService {
     private jwtService: JwtService,
     private readonly userService: UserService,
     private readonly mailerService: MailerService,
-    // @Inject('PG_CONNECTION') private dbClient: PoolClient,
     @Inject('PLANT43_DB_CASSANDRA') private dbClient: Client,
     private readonly configService: ConfigService,
   ) {}
 
-  async register(payload: CreateUserDto) {
-    const userId = uuidv4();
-    if (payload.password && payload.status === UserStatus.NOT_VERIFIED) {
-      throw new UnauthorizedException(
-        AuthenticationErrors.PASSWORDS_DO_NOT_MATCH,
-      );
-    }
-    const promise = new Promise<void>(async (resolve, reject) => {
-      try {
-        const appUrl = this.configService.get('APP_URL');
-        const activationToken = this.jwtService.sign(
-          {
-            email: payload.email,
-          },
-          { secret: jwtConstants.activationSecret, expiresIn: '30d' },
-        );
+  async sendActivationEmail() {}
 
-        await this.mailerService.sendMail({
-          to: 'nlopezg87@gmail.com',
-          from: 'noreply@nkodex.dev',
-          subject: 'Activation',
-          template: 'activation',
-          context: {
-            activateLink: `${appUrl}/auth/activation/${activationToken}`,
-          },
-        });
-        resolve();
-      } catch (e) {
-        reject(e);
+  async signUp(payload: CreateUserDto) {
+    const userId = uuidv4();
+    try {
+      const foundUser = await this.userService.findOneByEmail(payload.email);
+      if (foundUser) {
+        return new ApiResponse<void>(
+          AuthenticationErrors.ACCOUNT_ALREADY_ACTIVE,
+        );
       }
-    });
-    await this.userService.create(userId, payload);
+    } catch (e) {}
+    // try {
+    //   const appUrl = this.configService.get('APP_URL');
+    //   const activationToken = this.jwtService.sign(
+    //     {
+    //       email: payload.email,
+    //     },
+    //     { secret: jwtConstants.activationSecret, expiresIn: '1d' },
+    //   );
+    //   this.insertToken()
+    // } catch (e) {}
+    // const promise = new Promise<void>(async (resolve, reject) => {
+    //   try {
+    //     const appUrl = this.configService.get('APP_URL');
+    //     const activationToken = this.jwtService.sign(
+    //       {
+    //         email: payload.email,
+    //       },
+    //       { secret: jwtConstants.activationSecret, expiresIn: '30d' },
+    //     );
+    //
+    //     await this.userService.create(userId, payload);
+    //     await this.mailerService.sendMail({
+    //       to: 'nlopezg87@gmail.com',
+    //       from: 'noreply@nkodex.dev',
+    //       subject: 'Activation',
+    //       template: 'activation',
+    //       context: {
+    //         activateLink: `${appUrl}/auth/activation/${activationToken}`,
+    //       },
+    //     });
+    //     resolve();
+    //   } catch (e) {
+    //     reject(e);
+    //   }
+    // });
   }
 
   async login(email: string, password: string, confirmation: string) {
@@ -93,9 +109,10 @@ export class AuthService {
         // tokenPayload.exp
         await this.insertToken(
           tokenPayload.subject,
-          type.Access,
+          type.ACCESS,
           token,
           expirationDate,
+          new Date(0),
         );
         return { accessToken: token };
       } else {
@@ -129,9 +146,10 @@ export class AuthService {
       const expirationDate = new Date(tokenPayload.exp * 1000);
       await this.insertToken(
         tokenPayload.subject,
-        type.Refresh,
+        type.REFRESH,
         token,
         expirationDate,
+        new Date(0),
       );
       return { refreshToken: token };
     } catch (e) {
@@ -144,34 +162,96 @@ export class AuthService {
     }
   }
 
+  async generateToken(
+    user_id: string,
+    email: string,
+  ): Promise<{
+    token: string;
+    decoded: {
+      user_id: string;
+      email: string;
+      iat: number;
+      exp: number;
+    };
+  }> {
+    const token = this.jwtService.sign(
+      {
+        user_id: user_id,
+        email: email,
+      },
+      { secret: jwtConstants.activationSecret, expiresIn: '30d' },
+    );
+    return { token: token, decoded: this.jwtService.decode(token) } as {
+      token: string;
+      decoded: {
+        user_id: string;
+        email: string;
+        iat: number;
+        exp: number;
+      };
+    };
+  }
+
   async insertToken(
-    userId: number,
+    userId: string,
     type: TokenTypeEnum,
     token: string,
-    expires_at: Date,
+    expiresAt: Date,
+    revokedAt: Date,
   ) {
     try {
-      const revoked_at = new Date(0);
-
-      await this.dbClient.execute(
-        `insert into tokens (user_id, type, token, expires_at, revoked_at)
-                 values ($1, $2, $3, $4, $5);`,
-        [userId, type, token, expires_at, revoked_at],
+      const result = await this.dbClient.execute(
+        `INSERT INTO tokens (user_id, type, "token", expires_at, revoked_at)
+         values (?, ?, ?, ?, ?);`,
+        [userId, type, token, expiresAt, revokedAt],
       );
+      console.log(result);
     } catch (e) {
       throw new InternalServerErrorException();
     }
   }
 
-  async revokeTokenByToken(token: string) {
-    await this.dbClient.execute(
-      `update tokens
-             set revoked_by = 1,
-                 is_revoked = true
-             where token = $1;
-            `,
-      [token],
-    );
+  async revokeTokenByToken(
+    token: string,
+    type: TokenTypeEnum = null,
+    userId: string = null,
+  ) {
+    try {
+      const res = await this.dbClient.execute(
+        `update tokens
+         set revoked_at = ?
+         where "token" = ?
+           AND type = ?
+           AND user_id = ?;
+        `,
+        [new Date(), token, type, userId],
+      );
+      if (res.wasApplied()) {
+        return true;
+      } else {
+        throw new NotFoundException();
+      }
+    } catch (e) {
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async getToken(token: string) {
+    try {
+      const res = await this.dbClient.execute(
+        `select *
+         from tokens
+         where "token" = ?;`,
+        [token],
+      );
+      if (res.rowLength > 0) {
+        return res.rows[0];
+      } else {
+        throw new NotFoundException();
+      }
+    } catch (e) {
+      throw new InternalServerErrorException();
+    }
   }
 
   async activation(token: string) {

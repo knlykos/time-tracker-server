@@ -16,4 +16,9 @@ export class PlantATreeDbService {
     this.client = new Client(options);
     return this.client;
   }
+
+  onApplicationShutdown(signal: string) {
+    console.log(`Application is shutting down DB with signal: ${signal}`);
+    this.client.shutdown();
+  }
 }
