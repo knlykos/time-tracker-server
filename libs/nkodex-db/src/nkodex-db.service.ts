@@ -26,4 +26,9 @@ export class NkodexDbService {
       client.release();
     }
   }
+
+  onApplicationShutdown(signal: string) {
+    console.log(`Application is shutting down PG DB with signal: ${signal}`);
+    this.pool.end();
+  }
 }

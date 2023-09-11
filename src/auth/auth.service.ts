@@ -82,6 +82,17 @@ export class AuthService {
     // });
   }
 
+  async comparePasswords(password: string, hashedPassword: string) {
+    return await new Promise<boolean>((resolve, reject) => {
+      bcrypt.compare(password, hashedPassword, (err, result) => {
+        if (err) {
+          reject(err);
+        }
+        resolve(result);
+      });
+    });
+  }
+
   async login(email: string, password: string, confirmation: string) {
     try {
       if (password !== confirmation) {
@@ -99,7 +110,7 @@ export class AuthService {
       if (passwordMatch) {
         const token = this.jwtService.sign({
           email: user.email,
-          subject: user.id,
+          subject: user.user_id,
         });
 
         const tokenPayload = this.jwtService.verify(token);

@@ -8,7 +8,7 @@ import {
 
 export class UserDto {
   @IsString()
-  readonly id: number;
+  readonly user_id: string;
   @IsEmail()
   @MaxLength(50)
   readonly email?: string;
@@ -32,4 +32,7 @@ export class UserDto {
   @MaxLength(30)
   @MinLength(1)
   readonly firstname?: string;
+  @IsString()
+  @IsOptional()
+  readonly phone_number?: string;
 }

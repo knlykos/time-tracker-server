@@ -18,7 +18,7 @@ export class PlantATreeDbService {
   }
 
   onApplicationShutdown(signal: string) {
-    console.log(`Application is shutting down DB with signal: ${signal}`);
+    console.log(`Application is shutting down Cassandra DB with signal: ${signal}`);
     this.client.shutdown();
   }
 }

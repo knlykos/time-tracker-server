@@ -24,6 +24,7 @@ export class UserService {
   constructor(@Inject('PLANT43_DB_CASSANDRA') private dbClient: Client) {}
 
   async create<T>(uuid: string, payload: CreateUserDto): Promise<any> {
+
     // TODO: password is not null and verify comments on table
     try {
       const saltOrRounds = 10;
@@ -55,6 +56,7 @@ export class UserService {
 
       return query.wasApplied();
     } catch (error) {
+      console.log(error);
       throw new InternalServerErrorException();
     }
   }
@@ -164,8 +166,6 @@ export class UserService {
       throw new InternalServerErrorException();
     }
   }
-
-
 
   async delete(payload: any) {
     await this.dbClient.execute(

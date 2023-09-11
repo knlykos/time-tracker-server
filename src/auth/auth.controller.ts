@@ -39,30 +39,6 @@ export class AuthController {
     private readonly mailerService: MailerService,
   ) {}
 
-  @Post('login')
-  async login(@Body() body: LoginAuthDto) {
-    // password = 'Nefo123..';
-    try {
-      if (body.password !== body.confirmation) {
-        throw new NotAcceptableException(
-          'Password and confirm password must be the same',
-        );
-      }
-
-      const accessToken = await this.authService.login(
-        body.email,
-        body.password,
-        body.confirmation,
-      );
-      return accessToken;
-    } catch (e) {
-      if (e instanceof HttpException) {
-        throw e;
-      }
-      throw new InternalServerErrorException();
-    }
-  }
-
   @UseGuards(JwtAccessAuthGuard)
   @Post('refresh-token')
   async refreshToken(@User() user: UserEntity) {
@@ -78,7 +54,7 @@ export class AuthController {
 
   @Post('signup')
   async signUp(@Body() body: CreateUserDto) {
-    console.log(body);
+    // console.log('here')
     //     Recibe payload con email, phoneNumber, username, password.
     //     Se valida segun las politicas de registro.
     //     Se genera un token que se guardara en las tablas de registro de token para activacion especial para activacion con toda la metadata necesario para activacion de usuario.
@@ -92,6 +68,7 @@ export class AuthController {
       await this.userService.create(uuid, body);
       // return new ApiResponse<void>(AuthSuccessMessages.ACCOUNT_REGISTERED);
     } catch (e) {
+      console.log(e);
       if (e instanceof HttpException) {
         throw e;
       } else {
@@ -99,7 +76,10 @@ export class AuthController {
       }
     }
     try {
-      const tokenData = await this.authService.generateToken(uuid, body.email);
+      const tokenData = await this.authService.generateToken(
+        uuid,
+        body.email.toLowerCase(),
+      );
       const iat = tokenData.decoded.iat; // tiempo en que se emitió
       const exp = tokenData.decoded.exp; // tiempo de expiración
 
@@ -122,11 +102,21 @@ export class AuthController {
           activateLink: `${appUrl}/auth/activation/${tokenData.token}`,
         },
       });
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+      if (e instanceof HttpException) {
+        throw e;
+      } else {
+        throw new InternalServerErrorException();
+      }
+    }
   }
 
   @Get('activation/:token')
   async activation(@Param('token') token: string) {
+    if (!token) {
+      throw new UnauthorizedException('Invalid token');
+    }
     const tokenTypes = TokenTypeEnum;
     try {
       const verifyRes = this.jwtService.verify<{ user_id: string }>(token, {
@@ -158,6 +148,33 @@ export class AuthController {
       if (e.constructor.name === 'JsonWebTokenError') {
         throw new UnauthorizedException('Invalid token');
       }
+      if (e instanceof HttpException) {
+        throw e;
+      }
+      throw new InternalServerErrorException();
+    }
+  }
+
+  @Post('login')
+  async login(@Body() body: LoginAuthDto) {
+    // password = 'Nefo123..';
+    try {
+      const user = await this.userService.findOneByEmail(body.email);
+      await this.authService.comparePasswords(body.password, user.password);
+      const token = this.jwtService.sign({
+        email: user.email,
+        subject: user.user_id,
+      });
+      const tokenPayload = this.jwtService.verify(token);
+      await this.authService.insertToken(
+        user.user_id,
+        TokenTypeEnum.ACCESS,
+        token,
+        new Date(tokenPayload.decoded.exp * 1000),
+        new Date(0),
+      );
+      return { accessToken: token };
+    } catch (e) {
       if (e instanceof HttpException) {
         throw e;
       }
