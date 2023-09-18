@@ -12,6 +12,8 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh-strategy';
 import { ConfigModule } from '@nestjs/config';
+import { LoginService } from './login/login.service';
+import { SignupService } from './signup/signup.service';
 
 @Module({
   imports: [
@@ -51,6 +53,8 @@ import { ConfigModule } from '@nestjs/config';
     JwtAccessStrategy,
     JwtRefreshStrategy,
     JwtActivationStrategy,
+    LoginService,
+    SignupService,
   ],
   exports: [AuthService],
 })

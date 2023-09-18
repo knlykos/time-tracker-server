@@ -7,13 +7,16 @@ import {
   Param,
   Post,
   Put,
+  Res,
   UseInterceptors,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto/create-user.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { ApiResponse } from '../common/response-types/api.response';
 import { ApiResponseInterceptor } from '../common/api-response/api-response.interceptor';
+import { UserMessages } from './constant/common/user-messages';
 
 @Controller('user')
 export class UserController {
@@ -21,31 +24,19 @@ export class UserController {
 
   @UseInterceptors(ApiResponseInterceptor)
   @Post()
-  async create(@Body() user: CreateUserDto) {
+  async create(@Body() user: CreateUserDto, @Res() res: Response) {
     // const apiResponse = new ApiResponse();
-    const userId = uuidv4();
     try {
-      const foundUser = await this.userService.findOneByEmail(user.email);
-      if (foundUser) {
-        return new ApiResponse<void>('User already exists');
-      }
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        try {
-          const userWasApplied = await this.userService.create(userId, user);
-          if (userWasApplied) {
-            return new ApiResponse<void>('User was created');
-          }
-        } catch (e) {
-          throw new InternalServerErrorException();
-        }
-      }
-      throw error;
+      await this.userService.create(user);
+      const apiResponse = ApiResponse.created(UserMessages.USER_CREATED);
+      res.status(apiResponse.getStatus()).json(apiResponse);
+    } catch (e) {
+      throw new InternalServerErrorException();
     }
   }
 
   @Get('id/:id')
-  async findOneById(@Param('id') id: number) {
+  async findOneById(@Param('id') id: string) {
     try {
       return await this.userService.findOneById(id);
     } catch (error) {

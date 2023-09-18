@@ -7,6 +7,7 @@ export class NkodexDbService {
 
   getConnection(config: PoolConfig) {
     this.pool = new Pool(config);
+    console.log('PG DB connected');
     return this.pool;
   }
 

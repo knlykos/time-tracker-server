@@ -9,7 +9,7 @@ export enum UserErrorMessages {
   USERNAME_TOO_SHORT = 'Username must be at least X characters long',
   USERNAME_TOO_LONG = 'Username cannot exceed X characters',
   USERNAME_REQUIREMENTS_NOT_MET = 'Username cannot contain special characters',
-  EMAIL_ALREADY_IN_USE = 'Email already in use',
+  EMAIL_OR_USERNAME_ALREADY_IN_USE = 'Email or Username already in use',
   USERNAME_ALREADY_IN_USE = 'Username already in use',
   INVALID_EMAIL_FORMAT = 'Invalid email format',
   PASSWORD_TOO_WEAK = 'Password is too weak',
@@ -24,4 +24,5 @@ export enum UserErrorMessages {
   USER_ALREADY_DISABLED = 'User already disabled',
   UNABLE_TO_ENABLE_USER = 'Unable to enable user',
   UNABLE_TO_DISABLE_USER = 'Unable to disable user',
+  USER_ALREADY_ACTIVE = 'User already active',
 }

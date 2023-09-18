@@ -8,13 +8,13 @@ import {
 
 export class UserDto {
   @IsString()
-  readonly user_id: string;
+  readonly user_id?: string;
   @IsEmail()
   @MaxLength(50)
-  readonly email?: string;
+  readonly email: string;
   @IsString()
-  @MaxLength(6)
-  readonly username?: string;
+  @MinLength(6)
+  readonly username: string;
   @IsString()
   @MaxLength(50)
   @MinLength(6)

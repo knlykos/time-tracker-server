@@ -11,7 +11,7 @@ fdescribe('UserController (e2e)', () => {
   let dbClient: Client;
   const globalEmail = faker.internet.email().toLowerCase();
   const globalPassword = faker.internet.password();
-  let globalActivationToken = '';
+  const globalActivationToken = '';
   const tokenTypeEnum = TokenTypeEnum;
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({

@@ -4,9 +4,6 @@ import { UserDto } from '../../../user/dto/user.dto/userDto';
 
 export class LoginAuthDto extends PartialType(UserDto) {
   // TODO: add min y max validation for password and confirmation
-  @IsString()
-  confirmation: string;
-
   // @IsEmail()
   // readonly email: string;
   // @IsString()

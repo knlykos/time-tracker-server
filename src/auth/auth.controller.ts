@@ -10,7 +10,11 @@ import {
   UseGuards,
   Request,
   UnauthorizedException,
+  Res,
+  BadRequestException,
 } from '@nestjs/common';
+import { Response } from 'express';
+
 import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login-auth.dto/login-auth.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto/refresh-token.dto';
@@ -28,6 +32,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { jwtConstants } from './constants/constants';
 import { MailerService } from '@nestjs-modules/mailer';
+import { UserDto } from '../user/dto/user.dto/userDto';
+import { UserMessages } from '../user/constant/common/user-messages';
 
 @Controller('auth')
 export class AuthController {
@@ -53,7 +59,7 @@ export class AuthController {
   }
 
   @Post('signup')
-  async signUp(@Body() body: CreateUserDto) {
+  async signUp(@Body() body: CreateUserDto, @Res() res: Response) {
     // console.log('here')
     //     Recibe payload con email, phoneNumber, username, password.
     //     Se valida segun las politicas de registro.
@@ -61,14 +67,11 @@ export class AuthController {
     //     Se guarda la información del usuario y se genera un hash del password en la base de datos se guardara el hash.
     //     se genera un email y se envia con el token de activacion.
     //     se regresa respuesta al usuario.
-    const uuid = uuidv4();
-    const appUrl = this.configService.get('APP_URL');
-    const tokenTypes = TokenTypeEnum;
+    let user: UserDto;
     try {
-      await this.userService.create(uuid, body);
+      user = await this.userService.create(body);
       // return new ApiResponse<void>(AuthSuccessMessages.ACCOUNT_REGISTERED);
     } catch (e) {
-      console.log(e);
       if (e instanceof HttpException) {
         throw e;
       } else {
@@ -76,32 +79,9 @@ export class AuthController {
       }
     }
     try {
-      const tokenData = await this.authService.generateToken(
-        uuid,
-        body.email.toLowerCase(),
-      );
-      const iat = tokenData.decoded.iat; // tiempo en que se emitió
-      const exp = tokenData.decoded.exp; // tiempo de expiración
-
-      const iatDate = new Date(iat * 1000);
-      const expDate = new Date(exp * 1000);
-
-      const token = await this.authService.insertToken(
-        uuid,
-        tokenTypes.ACTIVATION,
-        tokenData.token,
-        expDate,
-        new Date(0),
-      );
-      await this.mailerService.sendMail({
-        to: body.email,
-        from: ' "Nkodex" <  ' + this.configService.get('MAIL_FROM') + '>',
-        subject: 'Nkodex - Account Activation - DEV',
-        template: 'activation',
-        context: {
-          activateLink: `${appUrl}/auth/activation/${tokenData.token}`,
-        },
-      });
+      await this.authService.generateActivationToken(user.user_id, user.email);
+      const apiResponse = ApiResponse.created(UserMessages.USER_CREATED);
+      res.status(apiResponse.getStatus()).json(apiResponse);
     } catch (e) {
       console.log(e);
       if (e instanceof HttpException) {
@@ -112,8 +92,25 @@ export class AuthController {
     }
   }
 
+  @Post('get-new-token/:email')
+  async generateNewToken(@Param('email') email: string, @Res() res: Response) {
+    try {
+      const newEmail = email.toLowerCase();
+      const user = await this.userService.findOneByEmail(newEmail);
+      await this.authService.generateActivationToken(user.user_id, newEmail);
+      const apiResponse = ApiResponse.created(AuthSuccessMessages.EMAIL_SENT);
+      res.status(apiResponse.getStatus()).json(apiResponse);
+    } catch (e) {
+      console.log(e, 'generateNewToken');
+      if (e instanceof HttpException) {
+        throw e;
+      }
+      throw new BadRequestException();
+    }
+  }
+
   @Get('activation/:token')
-  async activation(@Param('token') token: string) {
+  async activation(@Param('token') token: string, @Res() res: Response) {
     if (!token) {
       throw new UnauthorizedException('Invalid token');
     }
@@ -131,18 +128,19 @@ export class AuthController {
       ) {
         throw new UnauthorizedException('Invalid token');
       }
-
+      console.log(verifyRes);
       const result = await this.userService.activateUser(verifyRes.user_id);
 
-      if (result) {
-        await this.authService.revokeTokenByToken(
-          tokenRes.token,
-          tokenTypes.ACTIVATION,
-          verifyRes.user_id,
-        );
-        return new ApiResponse<void>(AuthSuccessMessages.ACCOUNT_ACTIVATED);
-      }
-      return new ApiResponse<void>(AuthSuccessMessages.ACCOUNT_ACTIVATED);
+      await this.authService.revokeTokenByToken(
+        tokenRes.token,
+        tokenTypes.ACTIVATION,
+        verifyRes.user_id,
+      );
+      const apiResponse = ApiResponse.created(
+        AuthSuccessMessages.ACCOUNT_ACTIVATED,
+      );
+
+      return res.status(apiResponse.getStatus()).json(apiResponse);
     } catch (e) {
       console.log(e);
       if (e.constructor.name === 'JsonWebTokenError') {
@@ -166,15 +164,16 @@ export class AuthController {
         subject: user.user_id,
       });
       const tokenPayload = this.jwtService.verify(token);
+      console.log(tokenPayload);
       await this.authService.insertToken(
         user.user_id,
         TokenTypeEnum.ACCESS,
         token,
-        new Date(tokenPayload.decoded.exp * 1000),
-        new Date(0),
+        tokenPayload.exp,
       );
       return { accessToken: token };
     } catch (e) {
+      console.log(e);
       if (e instanceof HttpException) {
         throw e;
       }

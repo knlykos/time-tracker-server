@@ -31,22 +31,22 @@ BigInt.prototype['toJSON'] = function () {
     }),
     AuthModule,
     // UserModule,
-
-    PlantATreeDbModule.forRoot({
-      contactPoints: [process.env.CASSANDRA_HOST],
-      localDataCenter: process.env.CASSANDRA_LOCAL_DATA_CENTER,
-      keyspace: process.env.CASSANDRA_KEYSPACE,
-      authProvider: new PlainTextAuthProvider('cassandra', 'cassandra'),
-      pooling: {
-        coreConnectionsPerHost: {
-          '0': 8, // remote hosts
-          '1': 2, // local hosts
-          '2': 1, // used hosts
-        },
-        maxRequestsPerConnection: 128,
-        heartBeatInterval: 60000,
-      },
-    }),
+    //
+    // PlantATreeDbModule.forRoot({
+    //   contactPoints: [process.env.CASSANDRA_HOST],
+    //   localDataCenter: process.env.CASSANDRA_LOCAL_DATA_CENTER,
+    //   keyspace: process.env.CASSANDRA_KEYSPACE,
+    //   authProvider: new PlainTextAuthProvider('cassandra', 'cassandra'),
+    //   pooling: {
+    //     coreConnectionsPerHost: {
+    //       '0': 8, // remote hosts
+    //       '1': 2, // local hosts
+    //       '2': 1, // used hosts
+    //     },
+    //     maxRequestsPerConnection: 128,
+    //     heartBeatInterval: 60000,
+    //   },
+    // }),
     NkodexDbModule.forRoot({
       host: process.env.PG_HOST,
       user: process.env.PG_USER,
