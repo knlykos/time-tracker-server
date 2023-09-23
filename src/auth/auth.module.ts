@@ -14,6 +14,8 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh-strategy';
 import { ConfigModule } from '@nestjs/config';
 import { LoginService } from './login/login.service';
 import { SignupService } from './signup/signup.service';
+import { TokenRepositoryDTO } from './repositories/tokens.dto';
+import { DataSource } from 'typeorm';
 
 @Module({
   imports: [
@@ -55,6 +57,12 @@ import { SignupService } from './signup/signup.service';
     JwtActivationStrategy,
     LoginService,
     SignupService,
+    {
+      provide: 'AUTH_REPOSITORY',
+      useFactory: (dataSource: DataSource) =>
+        dataSource.getRepository(TokenRepositoryDTO),
+      inject: ['PLANT43_DATABASE'],
+    },
   ],
   exports: [AuthService],
 })

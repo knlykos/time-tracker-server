@@ -155,7 +155,6 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body: LoginAuthDto) {
-    // password = 'Nefo123..';
     try {
       const user = await this.userService.findOneByEmail(body.email);
       await this.authService.comparePasswords(body.password, user.password);
@@ -164,7 +163,6 @@ export class AuthController {
         subject: user.user_id,
       });
       const tokenPayload = this.jwtService.verify(token);
-      console.log(tokenPayload);
       await this.authService.insertToken(
         user.user_id,
         TokenTypeEnum.ACCESS,

@@ -19,6 +19,7 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { PlantATreeDbModule } from '@plant43db/plant-a-tree-db';
 import { auth, ClientOptions } from 'cassandra-driver';
 import PlainTextAuthProvider = auth.PlainTextAuthProvider;
+import { DataSource } from 'typeorm';
 
 BigInt.prototype['toJSON'] = function () {
   return this.toString();
@@ -47,15 +48,35 @@ BigInt.prototype['toJSON'] = function () {
     //     heartBeatInterval: 60000,
     //   },
     // }),
-    NkodexDbModule.forRoot({
-      host: process.env.PG_HOST,
-      user: process.env.PG_USER,
-      password: process.env.PG_PASSWORD,
-      database: process.env.PG_DATABASE,
-      max: +process.env.PG_MAX_CONNECTIONS,
-    }),
+    // NkodexDbModule.forRoot({
+    //   host: process.env.PG_HOST,
+    //   user: process.env.PG_USER,
+    //   password: process.env.PG_PASSWORD,
+    //   database: process.env.PG_DATABASE,
+    //   max: +process.env.PG_MAX_CONNECTIONS,
+    // }),
   ],
   controllers: [AppController, UserController],
-  providers: [AppService, UserService],
+  providers: [
+    AppService,
+    UserService,
+    {
+      provide: 'PLANT43_DATABASE',
+      useFactory: async () => {
+        const dataSource = new DataSource({
+          type: 'postgres',
+          host: process.env.PG_HOST,
+          port: +process.env.PG_PORT,
+          username: process.env.PG_USER,
+          password: process.env.PG_PASSWORD,
+          database: process.env.PG_DATABASE,
+          entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+          synchronize: true,
+        });
+
+        return dataSource.initialize();
+      },
+    },
+  ],
 })
 export class AppModule {}

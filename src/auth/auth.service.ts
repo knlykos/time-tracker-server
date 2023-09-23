@@ -23,6 +23,7 @@ import { UserStatusEnum } from '../user/enums/user-enums';
 import { v4 as uuidv4 } from 'uuid';
 import { ApiResponse } from '../common/response-types/api.response';
 import { UserDto } from '../user/dto/user.dto/userDto';
+import { TokenRepositoryDTO } from './repositories/tokens.dto';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +33,9 @@ export class AuthService {
     private jwtService: JwtService,
     private readonly userService: UserService,
     private readonly mailerService: MailerService,
-    @Inject('PG_CONNECTION') private dbClient: PoolClient,
+    // @Inject('PG_CONNECTION') private dbClient: PoolClient,
+    @Inject('AUTH_REPOSITORY')
+    private authRepository: typeof TokenRepositoryDTO,
     private readonly configService: ConfigService,
   ) {}
 
