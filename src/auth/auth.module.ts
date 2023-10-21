@@ -16,6 +16,7 @@ import { LoginService } from './login/login.service';
 import { SignupService } from './signup/signup.service';
 import { TokenRepositoryDTO } from './repositories/tokens.dto';
 import { DataSource } from 'typeorm';
+import { Token } from './dto/tokens.dto/tokens.dto';
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { DataSource } from 'typeorm';
       secret: jwtConstants.accessSecret,
       signOptions: { expiresIn: '30d', issuer: 'NKODEX' },
     }),
-
+    TypeOrmModule.forFeature([Token]),
     MailerModule.forRoot({
       transport: {
         host: process.env.MAIL_HOST,
@@ -57,12 +58,6 @@ import { DataSource } from 'typeorm';
     JwtActivationStrategy,
     LoginService,
     SignupService,
-    {
-      provide: 'AUTH_REPOSITORY',
-      useFactory: (dataSource: DataSource) =>
-        dataSource.getRepository(TokenRepositoryDTO),
-      inject: ['PLANT43_DATABASE'],
-    },
   ],
   exports: [AuthService],
 })

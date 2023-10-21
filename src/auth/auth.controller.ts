@@ -23,7 +23,6 @@ import { ApiResponse } from '../common/response-types/api.response';
 import { AuthSuccessMessages } from './constants/auth-success-messages';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtAccessAuthGuard } from './guards/jwt-access-auth/jwt-access-auth.guard';
-import { User } from './decorators/user.decorator';
 import { UserEntity } from './entity/user.entity/user.entity';
 import { v4 as uuidv4 } from 'uuid';
 import { UserService } from '../user/user.service';
@@ -32,7 +31,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { jwtConstants } from './constants/constants';
 import { MailerService } from '@nestjs-modules/mailer';
-import { UserDto } from '../user/dto/user.dto/userDto';
+import { User } from '../user/dto/user.dto/userDto';
 import { UserMessages } from '../user/constant/common/user-messages';
 
 @Controller('auth')
@@ -47,7 +46,7 @@ export class AuthController {
 
   @UseGuards(JwtAccessAuthGuard)
   @Post('refresh-token')
-  async refreshToken(@User() user: UserEntity) {
+  async refreshToken(@Body() user: UserEntity) {
     try {
       return await this.authService.refreshToken(user);
     } catch (e) {
@@ -67,7 +66,7 @@ export class AuthController {
     //     Se guarda la información del usuario y se genera un hash del password en la base de datos se guardara el hash.
     //     se genera un email y se envia con el token de activacion.
     //     se regresa respuesta al usuario.
-    let user: UserDto;
+    let user: User;
     try {
       user = await this.userService.create(body);
       // return new ApiResponse<void>(AuthSuccessMessages.ACCOUNT_REGISTERED);

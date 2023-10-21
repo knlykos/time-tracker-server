@@ -1,45 +1,58 @@
-import { IsNotEmpty, IsOptional, IsIn } from 'class-validator';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { IsUUID, IsString, IsIn, IsOptional, IsDate } from 'class-validator';
 
-@Entity('tokens')
-export class TokenDTO {
+@Entity({ schema: 'public', name: 'tokens' })
+export class Token {
   @PrimaryGeneratedColumn('uuid')
-  tokenId: string;
+  @IsUUID()
+  token_id: string;
 
   @Column({ type: 'text' })
-  @IsNotEmpty()
+  @IsString()
   token: string;
 
   @Column({ type: 'uuid', nullable: true })
   @IsOptional()
-  userId: string;
+  @IsUUID()
+  user_id: string;
 
-  @Column({ type: 'text' })
-  @IsNotEmpty()
+  @Column({
+    type: 'text',
+  })
   @IsIn(['ACCESS', 'ACTIVATION', 'REFRESH'])
   type: string;
 
-  @Column({ type: 'timestamp', nullable: true })
-  @IsOptional()
-  createdAt: Date;
+  @CreateDateColumn()
+  @IsDate()
+  created_at: Date;
 
   @Column({ type: 'uuid', nullable: true })
   @IsOptional()
-  createdBy: string;
+  @IsUUID()
+  created_by: string;
 
   @Column({ type: 'timestamp', nullable: true })
   @IsOptional()
-  expiresAt: Date;
+  @IsDate()
+  expires_at: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
-  @IsOptional()
-  modifiedAt: Date;
+  @UpdateDateColumn()
+  @IsDate()
+  modified_at: Date;
 
   @Column({ type: 'uuid', nullable: true })
   @IsOptional()
-  modifiedBy: string;
+  @IsUUID()
+  modified_by: string;
 
   @Column({ type: 'timestamp', nullable: true })
   @IsOptional()
-  revokedAt: Date;
+  @IsDate()
+  revoked_at: Date;
 }

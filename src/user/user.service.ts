@@ -1,98 +1,73 @@
 import {
   BadRequestException,
   ConflictException,
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-
 import * as bcrypt from 'bcrypt';
-import { DatabaseError, PoolClient, QueryResult } from 'pg';
 import { CreateUserDto } from './dto/create-user.dto/create-user.dto';
-import { AuthenticationErrors } from '../auth/constants/auth-error-messages';
 import { UserErrorMessages } from './constant/common/user-error-messages';
-import { HttpException } from '@nestjs/common/exceptions/http.exception';
-import { UserDto } from './dto/user.dto/userDto';
-import { Client, types } from 'cassandra-driver';
+import { User } from './dto/user.dto/userDto';
 import { UserStatusEnum } from './enums/user-enums';
-import { AuthSuccessMessages } from '../auth/constants/auth-success-messages';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { HttpException } from '@nestjs/common/exceptions/http.exception';
 
 @Injectable()
 export class UserService {
-  constructor(@Inject('PG_CONNECTION') private dbClient: PoolClient) {}
+  constructor(
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
+  ) {}
 
-  async create<T>(payload: CreateUserDto): Promise<UserDto> {
-    // TODO: password is not null and verify comments on table
+  async create<T>(payload: CreateUserDto): Promise<User> {
     try {
-      const saltOrRounds = 10; // TODO: move to config
+      const saltOrRounds = 10;
       const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
-      const params = [
-        payload.email.toLowerCase(),
-        hashedPassword,
-        payload.username.toLowerCase(),
-        UserStatusEnum.NOT_VERIFIED,
-        false,
-      ];
 
-      const query = await this.dbClient.query(
-        `INSERT INTO users (email, password, username, status, is_system_user)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        params,
-      );
+      const newUser = this.userRepository.create({
+        email: payload.email.toLowerCase(),
+        password: hashedPassword,
+        username: payload.username.toLowerCase(),
+        status: UserStatusEnum.NOT_VERIFIED,
+        is_system_user: false,
+      });
 
-      return query.rows[0];
+      const savedUser = await this.userRepository.save(newUser);
+      return savedUser;
     } catch (error) {
-      console.log(error);
-      if (error instanceof DatabaseError) {
-        if (error.code === '23505') {
-          throw new ConflictException(
-            UserErrorMessages.EMAIL_OR_USERNAME_ALREADY_IN_USE,
-          );
-        }
+      if (error.code === '23505') {
+        throw new ConflictException(
+          UserErrorMessages.EMAIL_OR_USERNAME_ALREADY_IN_USE,
+        );
       }
-      console.log(error.constructor.name);
-      console.log(error);
       throw new InternalServerErrorException();
     }
   }
 
-  async findOneById(user_id: string): Promise<UserDto> {
-    console.log(user_id);
+  async findOneById(user_id: string): Promise<User> {
     try {
-      const result = await this.dbClient.query<UserDto>(
-        `SELECT *
-         FROM users
-         WHERE user_id = $1`,
-        [user_id],
-      );
-      if (result.rows.length > 0) {
-        return result.rows[0] as unknown as UserDto;
+      const user = await this.userRepository.findOne({ where: { user_id } });
+      if (user) {
+        return user;
       } else {
-        throw new NotFoundException(UserErrorMessages.EMAIL_NOT_FOUND);
+        throw new NotFoundException(UserErrorMessages.USER_NOT_FOUND);
       }
-    } catch (e) {
-      console.log(e);
-      throw new NotFoundException(UserErrorMessages.USER_NOT_FOUND);
+    } catch (error) {
+      throw new InternalServerErrorException();
     }
   }
 
-  async findOneByEmail(email: string): Promise<UserDto> {
+  async findOneByEmail(email: string): Promise<User> {
     try {
-      const query = 'SELECT * FROM users WHERE email = $1';
-      const params = [email];
-
-      const result = await this.dbClient.query(query, params);
-      if (result.rows.length > 0) {
-        // console.log(result);
-        return result.rows[0] as unknown as UserDto;
+      const user = await this.userRepository.findOne({ where: { email } });
+      if (user) {
+        return user;
       } else {
         throw new NotFoundException(UserErrorMessages.EMAIL_NOT_FOUND);
       }
     } catch (error) {
-      console.log(error, 'findOneByEmail');
       if (error instanceof HttpException) {
         throw error;
       }
@@ -101,60 +76,42 @@ export class UserService {
   }
 
   async updatePassword(payload: any) {
-    const saltOrRounds = 10;
-    const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
-    await this.dbClient.query(
-      `UPDATE users
-       SET password = $1
-       WHERE user_id = $2`,
-      [hashedPassword, payload.id],
-    );
     try {
+      const saltOrRounds = 10;
+      const hashedPassword = await bcrypt.hash(payload.password, saltOrRounds);
+      await this.userRepository.update(payload.id, {
+        password: hashedPassword,
+      });
     } catch (error) {
-      throw error;
+      throw new InternalServerErrorException();
     }
   }
 
   async updateUserStatus(user_id: string, status: string) {
     try {
-      await this.dbClient.query(
-        `UPDATE users
-         SET status = $1
-         WHERE user_id = $2`,
-        [status, user_id],
-      );
-    } catch (e) {
-      throw new BadRequestException(
-        AuthenticationErrors.ACCOUNT_ALREADY_ACTIVE,
-      );
+      await this.userRepository.update(user_id, { status });
+    } catch (error) {
+      throw new BadRequestException();
     }
   }
 
   async activateUser(user_id: string) {
     try {
       const user = await this.findOneById(user_id);
-
       if (user.status !== UserStatusEnum.NOT_VERIFIED) {
-        throw new BadRequestException(
-          AuthenticationErrors.ACCOUNT_ALREADY_ACTIVE,
-        );
+        throw new BadRequestException();
       }
       await this.updateUserStatus(user_id, UserStatusEnum.ACTIVE);
-    } catch (e) {
-      throw e;
+    } catch (error) {
+      throw new InternalServerErrorException();
     }
   }
 
   async delete(payload: any) {
-    await this.dbClient.query(
-      `DELETE
-       FROM users
-       WHERE user_id = $1`,
-      [payload.id],
-    );
     try {
+      await this.userRepository.delete(payload.id);
     } catch (error) {
-      throw error;
+      throw new InternalServerErrorException();
     }
   }
 }

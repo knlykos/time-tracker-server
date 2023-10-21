@@ -20,6 +20,8 @@ import { PlantATreeDbModule } from '@plant43db/plant-a-tree-db';
 import { auth, ClientOptions } from 'cassandra-driver';
 import PlainTextAuthProvider = auth.PlainTextAuthProvider;
 import { DataSource } from 'typeorm';
+import { User } from './user/dto/user.dto/userDto';
+import { Token } from './auth/dto/tokens.dto/tokens.dto';
 
 BigInt.prototype['toJSON'] = function () {
   return this.toString();
@@ -31,7 +33,18 @@ BigInt.prototype['toJSON'] = function () {
       envFilePath: '.development.env',
     }),
     AuthModule,
-    // UserModule,
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.PG_HOST,
+      port: +process.env.PG_PORT,
+      username: process.env.PG_USER,
+      password: process.env.PG_PASSWORD,
+      database: process.env.PG_DATABASE,
+      entities: [User, Token],
+      synchronize: true,
+      ssl: { rejectUnauthorized: false },
+    }),
+    UserModule,
     //
     // PlantATreeDbModule.forRoot({
     //   contactPoints: [process.env.CASSANDRA_HOST],
@@ -59,24 +72,23 @@ BigInt.prototype['toJSON'] = function () {
   controllers: [AppController, UserController],
   providers: [
     AppService,
-    UserService,
-    {
-      provide: 'PLANT43_DATABASE',
-      useFactory: async () => {
-        const dataSource = new DataSource({
-          type: 'postgres',
-          host: process.env.PG_HOST,
-          port: +process.env.PG_PORT,
-          username: process.env.PG_USER,
-          password: process.env.PG_PASSWORD,
-          database: process.env.PG_DATABASE,
-          entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-          synchronize: true,
-        });
-
-        return dataSource.initialize();
-      },
-    },
+    // {
+    //   provide: 'ERP_PG',
+    //   useFactory: async () => {
+    //     const dataSource = new DataSource({
+    //       type: 'postgres',
+    //       host: process.env.PG_HOST,
+    //       port: +process.env.PG_PORT,
+    //       username: process.env.PG_USER,
+    //       password: process.env.PG_PASSWORD,
+    //       database: process.env.PG_DATABASE,
+    //       entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+    //       synchronize: true,
+    //     });
+    //
+    //     return dataSource.initialize();
+    //   },
+    // },
   ],
 })
 export class AppModule {}

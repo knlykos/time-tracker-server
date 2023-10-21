@@ -11,7 +11,7 @@ import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcrypt';
 import { TokenTypeEnum } from './types/token-type.enum/token-type.enum';
 import { PoolClient } from 'pg';
-import { TokenDTO } from './dto/tokens.dto/tokens.dto';
+import { Token } from './dto/tokens.dto/tokens.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto/create-user.dto';
 import { jwtConstants } from './constants/constants';
 import { MailerService } from '@nestjs-modules/mailer';
@@ -22,8 +22,10 @@ import { UserEntity } from './entity/user.entity/user.entity';
 import { UserStatusEnum } from '../user/enums/user-enums';
 import { v4 as uuidv4 } from 'uuid';
 import { ApiResponse } from '../common/response-types/api.response';
-import { UserDto } from '../user/dto/user.dto/userDto';
+import { User } from '../user/dto/user.dto/userDto';
 import { TokenRepositoryDTO } from './repositories/tokens.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { LessThan, Repository } from 'typeorm';
 
 @Injectable()
 export class AuthService {
@@ -34,8 +36,8 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly mailerService: MailerService,
     // @Inject('PG_CONNECTION') private dbClient: PoolClient,
-    @Inject('AUTH_REPOSITORY')
-    private authRepository: typeof TokenRepositoryDTO,
+    @InjectRepository(Token)
+    private tokenRepository: Repository<Token>,
     private readonly configService: ConfigService,
   ) {}
 
@@ -202,7 +204,7 @@ export class AuthService {
   }
 
   async insertToken(
-    userId: string,
+    user_id: string,
     type: TokenTypeEnum,
     token: string,
     expiresAt: number,
@@ -210,12 +212,13 @@ export class AuthService {
     try {
       const exp = new Date(expiresAt * 1000);
       const rev = new Date(0);
-      const result = await this.dbClient.query(
-        `INSERT INTO tokens (user_id, type, "token", expires_at, revoked_at)
-         values ($1, $2, $3, $4, $5);`,
-        [userId, type, token, exp, rev],
-      );
-      console.log(result);
+      await this.tokenRepository.save({
+        user_id,
+        type,
+        token,
+        expires_at: exp,
+        revoked_at: rev,
+      });
     } catch (e) {
       console.log(e);
       throw new BadRequestException();
@@ -225,20 +228,15 @@ export class AuthService {
   async revokeTokenByToken(
     token: string,
     type: TokenTypeEnum = null,
-    userId: string = null,
+    user_id: string = null,
   ) {
     try {
-      const res = await this.dbClient.query(
-        `update tokens
-         set revoked_at = $1
-         where "token" = $2
-           AND type = $3
-           AND user_id = $4;
-        `,
-        [new Date(), token, type, userId],
+      const result = await this.tokenRepository.update(
+        { token, type, user_id },
+        { revoked_at: new Date() },
       );
 
-      if (res.rowCount > 0) {
+      if (result.affected > 0) {
         return true;
       } else {
         throw new NotFoundException();
@@ -250,14 +248,12 @@ export class AuthService {
 
   async getToken(token: string) {
     try {
-      const res = await this.dbClient.query(
-        `select *
-         from tokens
-         where "token" = $1;`,
-        [token],
-      );
-      if (res.rowCount > 0) {
-        return res.rows[0];
+      const foundToken = await this.tokenRepository.findOne({
+        where: { token },
+      });
+
+      if (foundToken) {
+        return foundToken;
       } else {
         throw new NotFoundException();
       }
@@ -267,17 +263,15 @@ export class AuthService {
     }
   }
 
-  async getTokenByUserId(user_id: string): Promise<TokenDTO> {
+  async getTokenByUserId(user_id: string): Promise<Token> {
     try {
-      const res = await this.dbClient.query(
-        `select *
-         from tokens
-         where user_id = $1
-           AND tokens.revoked_at < TIMESTAMP 'epoch';`,
-        [user_id],
-      );
-      if (res.rowCount > 0) {
-        return res.rows[0];
+      // Utiliza el método findOne de TypeORM
+      const foundToken = await this.tokenRepository.findOne({
+        where: { user_id, revoked_at: LessThan(new Date()) },
+      });
+
+      if (foundToken) {
+        return foundToken;
       } else {
         return null;
       }
