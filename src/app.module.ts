@@ -22,6 +22,8 @@ import PlainTextAuthProvider = auth.PlainTextAuthProvider;
 import { DataSource } from 'typeorm';
 import { User } from './user/dto/user.dto/userDto';
 import { Token } from './auth/dto/tokens.dto/tokens.dto';
+import { ProductModule } from './product/product.module';
+import { Product } from './product/entities/product.entity';
 
 BigInt.prototype['toJSON'] = function () {
   return this.toString();
@@ -40,11 +42,12 @@ BigInt.prototype['toJSON'] = function () {
       username: process.env.PG_USER,
       password: process.env.PG_PASSWORD,
       database: process.env.PG_DATABASE,
-      entities: [User, Token],
+      entities: [User, Token, Product],
       synchronize: true,
       ssl: { rejectUnauthorized: false },
     }),
     UserModule,
+    ProductModule,
     //
     // PlantATreeDbModule.forRoot({
     //   contactPoints: [process.env.CASSANDRA_HOST],
