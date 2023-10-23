@@ -2,11 +2,16 @@ import { Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { IsOptional, IsString } from 'class-validator';
 
 export class DbRepositories {
+  _name: string;
+  _description: string;
+
+  @Column({ type: 'boolean', default: true })
+  active: boolean;
+
   @CreateDateColumn()
   created_at: Date;
 
   @Column({ nullable: true, type: 'text' })
-  @IsOptional()
   @IsString()
   created_by: string;
 
@@ -14,7 +19,6 @@ export class DbRepositories {
   modified_at: Date;
 
   @Column({ nullable: true, type: 'text' })
-  @IsOptional()
   @IsString()
   modified_by: string;
 }
