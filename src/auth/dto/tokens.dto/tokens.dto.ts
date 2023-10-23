@@ -6,9 +6,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { IsUUID, IsString, IsIn, IsOptional, IsDate } from 'class-validator';
+import { DbRepositories } from '../../../main/db.repositories';
 
 @Entity({ schema: 'public', name: 'tokens' })
-export class Token {
+export class Token extends DbRepositories {
   @PrimaryGeneratedColumn('uuid')
   @IsUUID()
   token_id: string;
@@ -28,28 +29,10 @@ export class Token {
   @IsIn(['ACCESS', 'ACTIVATION', 'REFRESH'])
   type: string;
 
-  @CreateDateColumn()
-  @IsDate()
-  created_at: Date;
-
-  @Column({ type: 'uuid', nullable: true })
-  @IsOptional()
-  @IsUUID()
-  created_by: string;
-
   @Column({ type: 'timestamp', nullable: true })
   @IsOptional()
   @IsDate()
   expires_at: Date;
-
-  @UpdateDateColumn()
-  @IsDate()
-  modified_at: Date;
-
-  @Column({ type: 'uuid', nullable: true })
-  @IsOptional()
-  @IsUUID()
-  modified_by: string;
 
   @Column({ type: 'timestamp', nullable: true })
   @IsOptional()

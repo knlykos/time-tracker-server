@@ -1,12 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Unique,
-  Index,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Unique, Index } from 'typeorm';
 import {
   IsEmail,
   IsOptional,
@@ -17,24 +9,17 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { DbRepositories } from '../../../main/db.repositories';
 
 @Entity('users')
 @Unique(['email'])
 @Unique(['username'])
 @Index('idx_users_email', ['email'])
 @Index('idx_users_username', ['username'])
-export class User {
+export class User extends DbRepositories {
   @PrimaryGeneratedColumn('uuid')
   @IsUUID()
   user_id: string;
-
-  @CreateDateColumn()
-  created_at: Date;
-
-  @Column({ nullable: true, type: 'text' })
-  @IsOptional()
-  @IsString()
-  created_by: string;
 
   @Column({ type: 'text' })
   @IsEmail()
@@ -55,14 +40,6 @@ export class User {
   @IsString()
   lastname: string;
 
-  @UpdateDateColumn()
-  modified_at: Date;
-
-  @Column({ nullable: true, type: 'text' })
-  @IsOptional()
-  @IsString()
-  modified_by: string;
-
   @Column({ type: 'text' })
   @IsString()
   @MinLength(8)
@@ -74,18 +51,6 @@ export class User {
   @IsString()
   phone_number: string;
 
-  @Column({
-    type: 'enum',
-    enum: [
-      'ACTIVE',
-      'INACTIVE',
-      'PENDING',
-      'SUSPENDED',
-      'NOT_VERIFIED',
-      'DELETED',
-    ],
-    default: 'PENDING',
-  })
   @IsIn([
     'ACTIVE',
     'INACTIVE',
