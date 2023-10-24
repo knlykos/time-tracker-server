@@ -10,4 +10,5 @@ export enum AuthenticationErrors {
   PASSWORD_REQUIREMENTS_NOT_MET = 'Password must contain at least one letter and one number',
   PASSWORDS_DO_NOT_MATCH = 'Passwords do not match',
   ACCOUNT_ALREADY_ACTIVE = 'Account already active',
+  ACCOUNT_NOT_ACTIVE = 'Account not active',
 }

@@ -3,4 +3,13 @@ export enum AuthSuccessMessages {
   LOGIN_SUCCESSFUL = 'Login successful.',
   ACCOUNT_ACTIVATED = 'Your account has been activated successfully. You can now login.',
   TOKEN_REFRESHED = 'Token refreshed successfully.',
+  PASSWORD_RESET = 'Password reset successfully.',
+  PASSWORD_CHANGED = 'Password changed successfully.',
+  PASSWORD_UPDATED = 'Password updated successfully.',
+  PASSWORD_RESET_EMAIL_SENT = 'Password reset email sent successfully.',
+  ACCOUNT_DISABLED = 'Account disabled successfully.',
+  ACCOUNT_ENABLED = 'Account enabled successfully.',
+  ACCOUNT_DELETED = 'Account deleted successfully.',
+  ACCOUNT_UPDATED = 'Account updated successfully.',
+  EMAIL_SENT = 'Email sent successfully.',
 }

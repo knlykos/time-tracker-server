@@ -12,6 +12,8 @@
   },
   "moduleNameMapper": {
     "@nkodex-db/nkodex-db/(.*)": "<rootDir>/../libs/nkodex-db/src/$1",
-    "@nkodex-db/nkodex-db": "<rootDir>/../libs/nkodex-db/src"
+    "@nkodex-db/nkodex-db": "<rootDir>/../libs/nkodex-db/src",
+    "@plant43db/plant-a-tree-db/(.*)": "<rootDir>/../libs/plant-a-tree-db/src/$1",
+    "@plant43db/plant-a-tree-db": "<rootDir>/../libs/plant-a-tree-db/src"
   }
 }

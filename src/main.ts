@@ -10,6 +10,8 @@ async function bootstrap() {
     }),
   );
   app.enableCors();
+  app.enableShutdownHooks();
+
   await app.listen(3000);
 }
 

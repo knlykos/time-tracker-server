@@ -1,39 +1,67 @@
-import { IsEmail, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Entity, PrimaryGeneratedColumn, Column, Unique, Index } from 'typeorm';
+import {
+  IsEmail,
+  IsOptional,
+  IsUUID,
+  IsBoolean,
+  IsIn,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+import { DbRepositories } from '../../../main/db.repositories';
 
-export class UserDto {
-  @IsNumber()
-  readonly id: number;
+@Entity('users')
+@Unique(['email'])
+@Unique(['username'])
+@Index('idx_users_email', ['email'])
+@Index('idx_users_username', ['username'])
+export class User extends DbRepositories {
+  @PrimaryGeneratedColumn('uuid')
+  @IsUUID()
+  user_id: string;
+
+  @Column({ type: 'text' })
   @IsEmail()
-  readonly email?: string;
+  email: string;
+
+  @Column({ nullable: true, type: 'text' })
+  @IsOptional()
   @IsString()
-  readonly username?: string;
+  firstname: string;
+
+  @Column({ nullable: true, type: 'boolean' })
+  @IsOptional()
+  @IsBoolean()
+  is_system_user: boolean;
+
+  @Column({ nullable: true, type: 'text' })
+  @IsOptional()
   @IsString()
-  readonly password?: string;
-  @IsNumber()
-  @IsOptional()
-  readonly status?: number;
-  @IsNumber()
-  @IsOptional()
-  readonly group_id?: number;
-  @IsNumber()
-  @IsOptional()
-  readonly org_id?: number;
-  @IsNumber()
-  @IsOptional()
-  readonly role_id?: number;
-  @IsNumber()
-  @IsOptional()
-  readonly client_id?: number;
-  @IsNumber()
-  @IsOptional()
-  readonly rate?: number;
+  lastname: string;
+
+  @Column({ type: 'text' })
   @IsString()
+  @MinLength(8)
+  @MaxLength(100)
+  password: string;
+
+  @Column({ nullable: true, type: 'text' })
   @IsOptional()
-  readonly quota_percent?: string;
   @IsString()
-  @IsOptional()
-  readonly lastname?: string;
+  phone_number: string;
+
+  @IsIn([
+    'ACTIVE',
+    'INACTIVE',
+    'PENDING',
+    'SUSPENDED',
+    'NOT_VERIFIED',
+    'DELETED',
+  ])
+  status: string;
+
+  @Column({ type: 'text' })
   @IsString()
-  @IsOptional()
-  readonly name?: string;
+  username: string;
 }

@@ -12,6 +12,11 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh-strategy';
 import { ConfigModule } from '@nestjs/config';
+import { LoginService } from './login/login.service';
+import { SignupService } from './signup/signup.service';
+import { TokenRepositoryDTO } from './repositories/tokens.dto';
+import { DataSource } from 'typeorm';
+import { Token } from './dto/tokens.dto/tokens.dto';
 
 @Module({
   imports: [
@@ -23,7 +28,7 @@ import { ConfigModule } from '@nestjs/config';
       secret: jwtConstants.accessSecret,
       signOptions: { expiresIn: '30d', issuer: 'NKODEX' },
     }),
-
+    TypeOrmModule.forFeature([Token]),
     MailerModule.forRoot({
       transport: {
         host: process.env.MAIL_HOST,
@@ -51,6 +56,8 @@ import { ConfigModule } from '@nestjs/config';
     JwtAccessStrategy,
     JwtRefreshStrategy,
     JwtActivationStrategy,
+    LoginService,
+    SignupService,
   ],
   exports: [AuthService],
 })
