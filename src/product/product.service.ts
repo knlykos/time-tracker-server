@@ -21,18 +21,18 @@ export class ProductService {
     return this.productRepository.find();
   }
 
-  findOne(id: number) {
+  findOne(product_id: string) {
     return this.productRepository.findOne({
-      where: { id },
+      where: { product_id },
     });
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return this.productRepository.update(id, updateProductDto);
+  update(product_id: string, updateProductDto: UpdateProductDto) {
+    return this.productRepository.update(product_id, updateProductDto);
   }
 
-  changeStatus(id: number, status: UpdateProductStatusDto) {
-    return this.productRepository.update(id, status);
+  changeStatus(product_id: string, status: UpdateProductStatusDto) {
+    return this.productRepository.update(product_id, status);
   }
 
   // remove(id: number) {

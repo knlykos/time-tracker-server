@@ -9,7 +9,8 @@ import {
   ParseIntPipe,
   Put,
   UseInterceptors,
-  Res, InternalServerErrorException,
+  Res,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -26,10 +27,16 @@ export class ProductController {
 
   @UseInterceptors(ApiResponseInterceptor)
   @Post()
-  async create(@Body() createProductDto: CreateProductDto, @Res() res: Response) {
+  async create(
+    @Body() createProductDto: CreateProductDto,
+    @Res() res: Response,
+  ) {
     try {
       const newProduct = await this.productService.create(createProductDto);
-      const apiResponse = ApiResponse.created(ProductSuccessMessages.PRODUCT_CREATED, newProduct);
+      const apiResponse = ApiResponse.created(
+        ProductSuccessMessages.PRODUCT_CREATED,
+        newProduct,
+      );
 
       res.status(apiResponse.getStatus()).json(apiResponse);
     } catch (err) {
@@ -43,21 +50,21 @@ export class ProductController {
     return this.productService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productService.findOne(+id);
+  @Get(':product_id')
+  findOne(@Param('product_id') product_id: string) {
+    return this.productService.findOne(product_id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productService.update(+id, updateProductDto);
+  @Patch(':product_id')
+  update(@Param('product_id') product_id: string, @Body() updateProductDto: UpdateProductDto) {
+    return this.productService.update(product_id, updateProductDto);
   }
 
-  @Put(':id/changeStatus')
+  @Put(':product_id/changeStatus')
   async changeStatus(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('product_id', ParseIntPipe) product_id: string,
     @Body() status: UpdateProductStatusDto,
   ) {
-    return this.productService.changeStatus(id, status);
+    return this.productService.changeStatus(product_id, status);
   }
 }
