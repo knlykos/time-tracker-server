@@ -25,6 +25,8 @@ import { Token } from './auth/dto/tokens.dto/tokens.dto';
 import { ProductModule } from './product/product.module';
 import { Product } from './product/entities/product.entity';
 import { WarehouseModule } from './warehouse/warehouse.module';
+import { Category } from './categories/entities/category.entity';
+import { CategoriesModule } from './categories/categories.module';
 
 BigInt.prototype['toJSON'] = function () {
   return this.toString();
@@ -43,7 +45,9 @@ BigInt.prototype['toJSON'] = function () {
       username: process.env.PG_USER,
       password: process.env.PG_PASSWORD,
       database: process.env.PG_DATABASE,
-      entities: [User, Token, Product],
+      entities: [User, Token, Product,
+        Category
+      ],
       synchronize: true,
       ssl: { rejectUnauthorized: false },
       autoLoadEntities: true,
@@ -51,6 +55,7 @@ BigInt.prototype['toJSON'] = function () {
     UserModule,
     ProductModule,
     WarehouseModule,
+    CategoriesModule,
     //
     // PlantATreeDbModule.forRoot({
     //   contactPoints: [process.env.CASSANDRA_HOST],
